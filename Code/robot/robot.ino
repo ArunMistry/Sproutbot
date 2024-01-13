@@ -1,6 +1,11 @@
 // Header Files
 
 
+// Define IR Sensor Pins
+int leftIr = 13;
+int middleIr = 12;
+int rightIr = 14;
+
 // Define motor control pins
 int enablePin = 14; // Enable
 int motor1Pin1 = 27; // Motor 1
@@ -25,7 +30,6 @@ void moveBack(int speed);
 void turnLeft(int speed);
 void turnRight(int speed);
 int locatePlant(int plant);
-int moveToPlant(int plant);
 int waterPlant(int plant);
 int returnToBase();
 int locateIrSource();
@@ -45,6 +49,7 @@ void setup() {
   // attach the channel to the GPIO to be controlled
   ledcAttachPin(enablePin, motorPwmChannel);
 
+  // Used for Serial Communication & Logging
   Serial.begin(115200);
 }
 
@@ -55,8 +60,11 @@ void loop() {
   // Run a loop for each plant present
   for (int i=0; i < numPlants; i++) {
     locatePlant(i);
-    moveToPlant(i);
-    waterPlant(i);
+    moveToIrSource();
+    // waterPlant(i);
   }
-  returnToBase();
+  
+  Serial.println("Loop Complete");
+  delay(10000);
+  // returnToBase();
 }
