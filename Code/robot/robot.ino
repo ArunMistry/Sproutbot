@@ -1,70 +1,96 @@
 // Header Files
 
 
+// Enum for loop()
+enum {
+  WAIT,
+  FIND_PLANT,
+  MOVE_PLANT,
+  WATER_PLANT,
+  FIND_BASE,
+  MOVE_BASE
+} loopStep = WAIT;
+
+// Define Ultrasonic Sensor Pins
+const int trigPin = 5;
+const int echoPin = 18;
+
 // Define IR Sensor Pins
-int leftIr = 13;
-int middleIr = 12;
-int rightIr = 14;
+const int middleIr = 13;
 
 // Define motor control pins
-int enablePin = 14; // Enable
-int motor1Pin1 = 27; // Motor 1
-int motor1Pin2 = 26; 
-int motor2Pin1 = 666; // Motor 2
-int motor2Pin2 = 666;
+const int enablePin = 14;   // Enable
+const int motor1Pin1 = 27;  // Motor 1
+const int motor1Pin2 = 26;
+const int motor2Pin1 = 666;  // Motor 2
+const int motor2Pin2 = 666;
 
 // Setting PWM properties for motor
-const int freq = 30000; // PWM Frequency
+const int freq = 30000;  // PWM Frequency
 const int motorPwmChannel = 0;
-const int resolution = 8; // Resolution of Duty Cycle
-int dutyCycle = 200; // 0 to 255
+const int resolution = 8;  // Resolution of Duty Cycle
 
 // Define number of plants
 const int numPlants = 1;
 
-// Function Prototypes
-int waitForSignal();
-void stopRobot();
-void moveFront(int speed);
-void moveBack(int speed);
-void turnLeft(int speed);
-void turnRight(int speed);
-int locatePlant(int plant);
-int waterPlant(int plant);
-int returnToBase();
-int locateIrSource();
-int moveToIrSource();
-
 void setup() {
-  // sets the pins as outputs:
-  pinMode(enablePin, OUTPUT);
-  pinMode(motor1Pin1, OUTPUT);
-  pinMode(motor1Pin2, OUTPUT);
-  pinMode(motor2Pin1, OUTPUT);
-  pinMode(motor2Pin2, OUTPUT);
-  
-  // configure LED PWM functionalitites
-  ledcSetup(motorPwmChannel, freq, resolution);
-  
-  // attach the channel to the GPIO to be controlled
-  ledcAttachPin(enablePin, motorPwmChannel);
+  // Setup motor pins and PWM
+  motorSetup();
+
+  // Set Ultrasonic sensor pins
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
 
   // Used for Serial Communication & Logging
   Serial.begin(115200);
 }
 
 void loop() {
-  // Wait until robot needs to start moving
-  waitForSignal();
+  Serial.println("Loop Start");
 
-  // Run a loop for each plant present
-  for (int i=0; i < numPlants; i++) {
-    locatePlant(i);
-    moveToIrSource();
-    // waterPlant(i);
+  // Variables
+  static int goToPlant = 0;
+
+  switch (loopStep) {
+    case WAIT:
+      if (waitForSignal()) {
+        loopStep = FIND_PLANT;
+      }
+      break;
+    case FIND_PLANT:
+      if (findPlant(goToPlant)) {
+        loopStep = MOVE_PLANT;
+      }
+      break;
+    case MOVE_PLANT:
+      if (moveToIrSource()) {
+        loopStep = WATER_PLANT;
+      }
+      break;
+    case WATER_PLANT:
+      if (goToPlant == numPlants) {
+        loopStep = FIND_BASE;
+      } else {
+        if (waterPlant(goToPlant)) {
+          goToPlant++;
+        }
+      }
+      break;
+    case FIND_BASE:
+      if (findBase()) {
+        loopStep = MOVE_BASE;
+      }
+      break;
+    case MOVE_BASE:
+      if (moveToIrSource()) {
+        loopStep = WAIT;
+      }
+      break;
+    default:
+      // Should not get here
+      exit(1);
+      break;
   }
-  
+
   Serial.println("Loop Complete");
-  delay(10000);
-  // returnToBase();
 }
