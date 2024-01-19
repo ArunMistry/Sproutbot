@@ -1,5 +1,6 @@
 // Header Files
-
+#include <esp_now.h>
+#include <WiFi.h>
 
 // Enum for loop()
 enum {
@@ -12,18 +13,18 @@ enum {
 } loopStep = WAIT;
 
 // Define Ultrasonic Sensor Pins
-const int trigPin = 5;
-const int echoPin = 18;
+const int trigPin = 32;
+const int echoPin = 35;
 
-// Define IR Sensor Pins
-const int middleIr = 13;
+// Define IR Sensor Pins (Only ADC1)
+const int middleIr = 34;
 
 // Define motor control pins
 const int enablePin = 14;   // Enable
-const int motor1Pin1 = 27;  // Motor 1
-const int motor1Pin2 = 26;
-const int motor2Pin1 = 666;  // Motor 2
-const int motor2Pin2 = 666;
+const int motor1Pin1 = 26;  // Motor 1
+const int motor1Pin2 = 27;
+const int motor2Pin1 = 33;  // Motor 2
+const int motor2Pin2 = 25;
 
 // Setting PWM properties for motor
 const int freq = 30000;  // PWM Frequency
@@ -34,20 +35,13 @@ const int resolution = 8;  // Resolution of Duty Cycle
 const int numPlants = 1;
 
 void setup() {
-  // Setup motor pins and PWM
-  motorSetup();
+  Serial.begin(115200); // Start Serial Comm & Logging  
+  motorSetup(); // Setup motor pins and PWM
+  espNowSetup(); // Setup Wifi & ESP-NOW
 
-  // Set Ultrasonic sensor pins
-  pinMode(trigPin, OUTPUT);
-  pinMode(echoPin, INPUT);
-
-  // Used for Serial Communication & Logging
-  Serial.begin(115200);
 }
 
 void loop() {
-  Serial.println("Loop Start");
-
   // Variables
   static int goToPlant = 0;
 
@@ -68,7 +62,9 @@ void loop() {
       }
       break;
     case WATER_PLANT:
-      if (goToPlant == numPlants) {
+      if (goToPlant >= numPlants) {
+        goToPlant = 0;
+        signalBase(numPlants);
         loopStep = FIND_BASE;
       } else {
         if (waterPlant(goToPlant)) {
@@ -91,6 +87,4 @@ void loop() {
       exit(1);
       break;
   }
-
-  Serial.println("Loop Complete");
 }

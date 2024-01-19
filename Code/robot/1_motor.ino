@@ -1,6 +1,5 @@
 // Motor Setup
-void motorSetup()
-{
+void motorSetup() {
   // Set Motor Pins as output:
   pinMode(enablePin, OUTPUT);
   pinMode(motor1Pin1, OUTPUT);
@@ -14,25 +13,27 @@ void motorSetup()
 }
 
 // Motor Speed Control to smooth speed changes
-const int speedFrac = 0.05;  // How much speed must change by
+const float speedFrac = 0.05;  // How much speed must change by
+float speedSmoothed = 0;       // Previous speed value
 int speedControl(int speed) {
-  static float speedSmoothed = 0;  // Previous speed value
-  speedSmoothed = (speed * speedFrac) + (speedSmoothed * (1 - speedFrac));
-
+  static unsigned long startTime = millis();
+  if (millis() - startTime > 100) {  // Has timeout happened yet?
+    startTime = millis();             // Reset startTime
+    speedSmoothed = (speed * speedFrac) + (speedSmoothed * (1 - speedFrac));
+  }
   return (int)speedSmoothed;
 }
 
 // // Motor functions
-// void stopRobot()
-// {
+// void stopRobot() {
+//   ledcWrite(motorPwmChannel, 0);
 //   digitalWrite(motor1Pin1, LOW);
 //   digitalWrite(motor1Pin2, LOW);
 //   digitalWrite(motor2Pin1, LOW);
 //   digitalWrite(motor2Pin2, LOW);
 // }
 
-// void moveFront(int speed)
-// {
+// void moveFront(int speed) {
 //   ledcWrite(motorPwmChannel, speedControl(speed));
 //   digitalWrite(motor1Pin1, LOW);
 //   digitalWrite(motor1Pin2, HIGH);
@@ -40,8 +41,7 @@ int speedControl(int speed) {
 //   digitalWrite(motor2Pin2, HIGH);
 // }
 
-// void moveBack(int speed)
-// {
+// void moveBack(int speed) {
 //   ledcWrite(motorPwmChannel, speedControl(speed));
 //   digitalWrite(motor1Pin1, HIGH);
 //   digitalWrite(motor1Pin2, LOW);
@@ -49,8 +49,7 @@ int speedControl(int speed) {
 //   digitalWrite(motor2Pin2, LOW);
 // }
 
-// void turnLeft(int speed)
-// {
+// void moveLeft(int speed) {
 //   ledcWrite(motorPwmChannel, speedControl(speed));
 //   digitalWrite(motor1Pin1, HIGH);
 //   digitalWrite(motor1Pin2, LOW);
@@ -58,8 +57,7 @@ int speedControl(int speed) {
 //   digitalWrite(motor2Pin2, HIGH);
 // }
 
-// void turnRight(int speed)
-// {
+// void moveRight(int speed) {
 //   ledcWrite(motorPwmChannel, speedControl(speed));
 //   digitalWrite(motor1Pin1, LOW);
 //   digitalWrite(motor1Pin2, HIGH);
@@ -67,13 +65,8 @@ int speedControl(int speed) {
 //   digitalWrite(motor2Pin2, LOW);
 // }
 
-void stopRobot() {
-}
-void moveFront(int speed) {
-}
-void moveBack(int speed) {
-}
-void turnLeft(int speed) {
-}
-void turnRight(int speed) {
-}
+void stopRobot(){}
+void moveFront(int speed){}
+void moveBack(int speed){}
+void moveLeft(int speed){}
+void moveRight(int speed){}
