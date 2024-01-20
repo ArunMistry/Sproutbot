@@ -1,6 +1,7 @@
 // Header Files
 #include <esp_now.h>
 #include <WiFi.h>
+#include <SFE_ISL29125.h>
 
 // Enum for loop()
 enum {
@@ -21,10 +22,14 @@ const int middleIr = 34;
 
 // Define motor control pins
 const int enablePin = 14;   // Enable
-const int motor1Pin1 = 26;  // Motor 1
-const int motor1Pin2 = 27;
+const int motor1Pin1 = 27;  // Motor 1
+const int motor1Pin2 = 26;
 const int motor2Pin1 = 33;  // Motor 2
 const int motor2Pin2 = 25;
+
+// Define pump control pins
+const int pumpPin = 13;  // the number of the Pump pin
+// Pin 21 and 22 for colour sensor
 
 // Setting PWM properties for motor
 const int freq = 30000;  // PWM Frequency
@@ -35,10 +40,10 @@ const int resolution = 8;  // Resolution of Duty Cycle
 const int numPlants = 1;
 
 void setup() {
-  Serial.begin(115200); // Start Serial Comm & Logging  
-  motorSetup(); // Setup motor pins and PWM
-  espNowSetup(); // Setup Wifi & ESP-NOW
-
+  Serial.begin(115200);  // Start Serial Comm & Logging
+  motorSetup();          // Setup motor pins and PWM
+  espNowSetup();         // Setup Wifi & ESP-NOW
+  // waterSystemSetup();    // Colour Sensor and Pump Setup
 }
 
 void loop() {
@@ -47,6 +52,7 @@ void loop() {
 
   switch (loopStep) {
     case WAIT:
+      // Serial.println("Waiting");
       if (waitForSignal()) {
         loopStep = FIND_PLANT;
       }

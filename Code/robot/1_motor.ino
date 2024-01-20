@@ -18,55 +18,57 @@ float speedSmoothed = 0;       // Previous speed value
 int speedControl(int speed) {
   static unsigned long startTime = millis();
   if (millis() - startTime > 100) {  // Has timeout happened yet?
-    startTime = millis();             // Reset startTime
+    startTime = millis();            // Reset startTime
     speedSmoothed = (speed * speedFrac) + (speedSmoothed * (1 - speedFrac));
+    Serial.print("Speed: ");
+    Serial.println(speedSmoothed);
   }
   return (int)speedSmoothed;
 }
 
-// // Motor functions
-// void stopRobot() {
-//   ledcWrite(motorPwmChannel, 0);
-//   digitalWrite(motor1Pin1, LOW);
-//   digitalWrite(motor1Pin2, LOW);
-//   digitalWrite(motor2Pin1, LOW);
-//   digitalWrite(motor2Pin2, LOW);
-// }
+// Motor functions
+void stopRobot() {
+  ledcWrite(motorPwmChannel, 0);
+  digitalWrite(motor1Pin1, LOW);
+  digitalWrite(motor1Pin2, LOW);
+  digitalWrite(motor2Pin1, LOW);
+  digitalWrite(motor2Pin2, LOW);
+}
 
-// void moveFront(int speed) {
-//   ledcWrite(motorPwmChannel, speedControl(speed));
-//   digitalWrite(motor1Pin1, LOW);
-//   digitalWrite(motor1Pin2, HIGH);
-//   digitalWrite(motor2Pin1, LOW);
-//   digitalWrite(motor2Pin2, HIGH);
-// }
+void moveFront(int speed) {
+  ledcWrite(motorPwmChannel, speedControl(speed));
+  digitalWrite(motor1Pin1, LOW);
+  digitalWrite(motor1Pin2, HIGH);
+  digitalWrite(motor2Pin1, LOW);
+  digitalWrite(motor2Pin2, HIGH);
+}
 
-// void moveBack(int speed) {
-//   ledcWrite(motorPwmChannel, speedControl(speed));
-//   digitalWrite(motor1Pin1, HIGH);
-//   digitalWrite(motor1Pin2, LOW);
-//   digitalWrite(motor2Pin1, HIGH);
-//   digitalWrite(motor2Pin2, LOW);
-// }
+void moveBack(int speed) {
+  ledcWrite(motorPwmChannel, speedControl(speed));
+  digitalWrite(motor1Pin1, HIGH);
+  digitalWrite(motor1Pin2, LOW);
+  digitalWrite(motor2Pin1, HIGH);
+  digitalWrite(motor2Pin2, LOW);
+}
 
-// void moveLeft(int speed) {
-//   ledcWrite(motorPwmChannel, speedControl(speed));
-//   digitalWrite(motor1Pin1, HIGH);
-//   digitalWrite(motor1Pin2, LOW);
-//   digitalWrite(motor2Pin1, LOW);
-//   digitalWrite(motor2Pin2, HIGH);
-// }
+void moveLeft(int speed) {
+  ledcWrite(motorPwmChannel, speedControl(speed));
+  digitalWrite(motor1Pin1, HIGH);
+  digitalWrite(motor1Pin2, LOW);
+  digitalWrite(motor2Pin1, LOW);
+  digitalWrite(motor2Pin2, HIGH);
+}
 
-// void moveRight(int speed) {
-//   ledcWrite(motorPwmChannel, speedControl(speed));
-//   digitalWrite(motor1Pin1, LOW);
-//   digitalWrite(motor1Pin2, HIGH);
-//   digitalWrite(motor2Pin1, HIGH);
-//   digitalWrite(motor2Pin2, LOW);
-// }
+void moveRight(int speed) {
+  ledcWrite(motorPwmChannel, speedControl(speed));
+  digitalWrite(motor1Pin1, LOW);
+  digitalWrite(motor1Pin2, HIGH);
+  digitalWrite(motor2Pin1, HIGH);
+  digitalWrite(motor2Pin2, LOW);
+}
 
-void stopRobot(){}
-void moveFront(int speed){}
-void moveBack(int speed){}
-void moveLeft(int speed){}
-void moveRight(int speed){}
+// void stopRobot(){}
+// void moveFront(int speed){ledcWrite(motorPwmChannel, speedControl(speed));}
+// void moveBack(int speed){ledcWrite(motorPwmChannel, speedControl(speed));}
+// void moveLeft(int speed){ledcWrite(motorPwmChannel, speedControl(speed));}
+// void moveRight(int speed){ledcWrite(motorPwmChannel, speedControl(speed));}

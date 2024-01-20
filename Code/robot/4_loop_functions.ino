@@ -1,13 +1,21 @@
 // Wait for a plant to request water
 // TODO: Add in communication at plant side
 int waitForSignal() {
-  // Timer to prevent infinite loop
+  // Timer Variables
   static unsigned long startTime = millis();
-  if (millis() - startTime < 10000) {  // Timeout happened yet?
+  static bool newEntry = true;  // startTime must be set only once per function run to success
+
+  if (newEntry) {  // Is this the first function call for a specific check/operation?
+    newEntry = false;
+    startTime = millis();  // Set startTime for current function run
+    Serial.println("Timeout Started");
+  }
+
+  if (millis() - startTime < 100) {  // Timeout happened yet?
     return 0;                          // No Timeout yet
   } else {
-    startTime = millis();  // Reset startTime
-    sendEspNowMsg('P', '0', 1); // Turn on First Plant
+    newEntry = true;             // Start timeout again on next function call
+    sendEspNowMsg('P', '0', 1);  // Turn on IR at First Plant
     Serial.println("Time to locate plant");
     return 1;  // Timeout happened
   }
@@ -21,7 +29,8 @@ int findPlant(int plant) {
     sendEspNowMsg('P', plant + '0', 1);
   }
 
-  int irStatus = locateIrSource(0, 80, 50000);  // Find the IR Signal of plant
+  moveLeft(200);                          // Rotate robot left
+  int irStatus = locateIrSource(5000);  // Find the IR Signal of plant
   if (irStatus == 2) {
     // TODO: Timeout Happened, Process later
     Serial.println("TIMEOUT: Plant Not Found");
@@ -36,19 +45,14 @@ int findPlant(int plant) {
 
 // TODO: Add in Code for this
 int waterPlant(int plant) {
-  static unsigned long startTime = millis();
-  if (millis() - startTime < 10000) {  // Timeout happened yet?
-    return 0;                          // No Timeout yet
-  } else {
-    startTime = millis();  // Reset startTime
+  if (findColour(80, 5000)) {
     Serial.println("Time to locate next plant or base");
     sendEspNowMsg('P', plant + '0', 0);
-    return 1;  // Timeout happened
+    return 1;  // Plant is watered
   }
 }
 
-void signalBase(int numPlants)
-{
+void signalBase(int numPlants) {
   sendEspNowMsg('B', '0', 1);
   for (int i = 0; i < numPlants; i++) {
     sendEspNowMsg('P', i + '0', 0);
@@ -65,7 +69,8 @@ int findBase() {
     sendEspNowMsg('B', '0', 1);
   }
 
-  int irStatus = locateIrSource(0, 80, 50000);  // Find the IR Signal of base
+  moveLeft(80);                          // Rotate robot left
+  int irStatus = locateIrSource(50000);  // Find the IR Signal of base
   if (irStatus == 2) {
     // TODO: Timeout Happened, Process later
     Serial.println("TIMEOUT: BASE Not Found");
