@@ -6,14 +6,17 @@
 // from[2]: From { B0 = Base, R0 = Robot, P0 to P9 = Specific Plant }
 // to[2]  : To { B0 = Base, R0 = Robot, P0 to P9 = Specific Plant }
 // irMsg  : 0 = Turn off IR, 1 = Turn on IR
+// ledMsg : 0 = turn off Blue LEDs, 1 = turn on Blue LEDs
 struct msgStruct {
   char from[2];
   char to[2];
   bool irMsg;
+  bool ledMsg;
 } msgData;
 
 // Variables
 const int irPin = 14;  // IR Emitter pin
+const int ledPin = 27; // Blue LEDs
 const int plantId = 0; // Unique Plant ID 
 
 // callback function that will be executed when data is received
@@ -24,11 +27,10 @@ void dataReceived(const uint8_t *mac, const uint8_t *incomingData, int len) {
 
   // Message is for the specific plant
   if (msgData.to[0] == 'P' && msgData.to[1] == (plantId + '0')) {
-    if (msgData.irMsg) {
-      digitalWrite(irPin, HIGH);
-    } else {
-      digitalWrite(irPin, LOW);
-    }
+      digitalWrite(irPin, msgData.irMsg);
+      digitalWrite(ledPin, msgData.ledMsg);
+      Serial.print("IR LED: ");
+      Serial.println(msgData.irMsg);
   }
 }
 

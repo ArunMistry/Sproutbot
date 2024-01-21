@@ -1,16 +1,17 @@
 // Header Files
 #include <esp_now.h>
 #include <WiFi.h>
-#include <SFE_ISL29125.h>
 
 // Enum for loop()
 enum {
   WAIT,
   FIND_PLANT,
   MOVE_PLANT,
+  MOVE_CLOSER_TO_PLANT,
   WATER_PLANT,
   FIND_BASE,
-  MOVE_BASE
+  MOVE_BASE,
+  MOVE_CLOSER_TO_BASE
 } loopStep = WAIT;
 
 // Define Ultrasonic Sensor Pins
@@ -27,9 +28,9 @@ const int motor1Pin2 = 26;
 const int motor2Pin1 = 33;  // Motor 2
 const int motor2Pin2 = 25;
 
-// Define pump control pins
-const int pumpPin = 13;  // the number of the Pump pin
-// Pin 21 and 22 for colour sensor
+// Define pump and colour sensor pin
+const int pumpPin = 13;
+const int colourPin = 39;
 
 // Setting PWM properties for motor
 const int freq = 30000;  // PWM Frequency
@@ -43,7 +44,8 @@ void setup() {
   Serial.begin(115200);  // Start Serial Comm & Logging
   motorSetup();          // Setup motor pins and PWM
   espNowSetup();         // Setup Wifi & ESP-NOW
-  // waterSystemSetup();    // Colour Sensor and Pump Setup
+  ultrasonicSetup();     // Ultrasonic Sensor Setup
+  waterSystemSetup();    // Colour Sensor and Pump Setup
 }
 
 void loop() {
@@ -63,7 +65,20 @@ void loop() {
       }
       break;
     case MOVE_PLANT:
-      if (moveToIrSource()) {
+      {
+        int moveResult = moveToIrSource(200);
+        if (moveResult == 2) {
+          Serial.println("Plant Lost, searching again");
+          loopStep = FIND_PLANT;
+        } else if (moveResult == 1) {
+          Serial.println("Plant Reached, using US now");
+          loopStep = MOVE_CLOSER_TO_PLANT;
+        }
+        break;
+      }
+    case MOVE_CLOSER_TO_PLANT:
+      if (moveToUsSource(200)) {
+        Serial.println("Ultrasonic Sensor used to get closer to plant");
         loopStep = WATER_PLANT;
       }
       break;
@@ -84,7 +99,14 @@ void loop() {
       }
       break;
     case MOVE_BASE:
-      if (moveToIrSource()) {
+      if (moveToIrSource(200)) {
+        Serial.println("Base Reached, using US now");
+        loopStep = MOVE_CLOSER_TO_BASE;
+      }
+      break;
+    case MOVE_CLOSER_TO_BASE:
+      if (moveToUsSource(200)) {
+        Serial.println("Ultrasonic Sensor used to get closer to base");
         loopStep = WAIT;
       }
       break;

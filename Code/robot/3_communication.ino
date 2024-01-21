@@ -2,15 +2,17 @@
 // from[2]: From { B0 = Base, R0 = Robot, P0 to P9 = Specific Plant }
 // to[2]  : To { B0 = Base, R0 = Robot, P0 to P9 = Specific Plant }
 // irMsg  : 0 = Turn off IR, 1 = Turn on IR
+// ledMsg : 0 = turn off Blue LEDs, 1 = turn on Blue LEDs
 struct msgStruct {
   char from[2];
   char to[2];
   bool irMsg;
+  bool ledMsg;
 } msgData;
 
 // Broadcast to all devices
 uint8_t broadcastAddress[] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
-
+ 
 // Callback when data is sent
 void onDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
   if (status != ESP_NOW_SEND_SUCCESS) {
@@ -42,14 +44,15 @@ void espNowSetup() {
 
 // Send a message to other boards.
 // toNum is 0 for Base and Robot
-void sendEspNowMsg(char toMsg, char toNum, bool irValue)
+void sendEspNowMsg(char toMsg, char toNum, bool irValue, bool ledValue)
 {
   // Set values to send
   msgData.from[0] = 'R';
   msgData.from[1] = '0';
   msgData.to[0] = toMsg;
   msgData.to[1] = toNum;
-  msgData.irMsg = 1;
+  msgData.irMsg = irValue;
+  msgData.ledMsg = ledValue;
 
   // Send message via ESP-NOW
   esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *)&msgData, sizeof(msgData));

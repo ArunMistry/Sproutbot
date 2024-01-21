@@ -1,43 +1,66 @@
 // Variables
-int IrCount = 0;                           // Number of times unique IR was detected when confirming
-int checkIrNum = 10;                       // Minimum number of times to confirm analog IR value
-int minIrStrength = 4095;                  // Analog IR Value when not detected
-int destinationIrThreshold = 150;          // IR strength when close to destination
-long destinationUltrasounsThreshold = 24;  // Time to first pulse detection. distance(cm) * 2 / 0.034
-int blueSensitivity = 800;                 // Sensitivity of colour sensor to blue
-SFE_ISL29125 RGB_sensor;                   // Declare sensor object
+int checkIrNum = 50;         // Minimum number of times to confirm analog IR value
+int checkUsNum = 2;          // Check Ultrasonic Sensor
+int minIrStrength = 4095;    // Analog IR Value when not detected
+int destIrThreshold = 300;   // IR strength when close to destination
+long destUsThreshold = 250;  // Time to first pulse detection. distance(cm) * 2 / 0.034
+int blueSensitivity = 800;   // Sensitivity of colour sensor to blue
+
+int findDestRotateSpeed = 200;       // Speed to rotate when searching for plant
+int findBlueRotateSpeed = 150;       // Speed to rotate when searching for Blue LED
+int robotIrMoveSpeed = 255;          // Speed to move when using IR
+int robotUsMoveSpeed = 200;          // Speed to move when using ultrasound
+int timeForOneDirectionIr = 2000;    // Time to rotate when searching IR, increased gradually
+int timeForOneDirectionBlue = 1000;  // Time to rotate when searching Blue LEDs, increased gradually
+
+const int blueFreqThreshold = 20;
 
 // Keep turning until the middle sensor reports a value.
 // Returns 0 if IR not found, 1 if IR found, 2 if function times out.
 int locateIrSource(int timeout) {
   // Timer Variables
   static unsigned long startTime;
-  static bool newEntry = true;  // startTime must be set only once per function run to success
+  static unsigned long rotateTime;
+  static int irCount = 0;        // Number of times unique IR was detected when confirming
+  static int turnDirection = 1;  // Check direction Time
+  static bool newEntry = true;   // startTime must be set only once per function run to success
 
   if (newEntry) {  // Is this the first function call for a specific check/operation?
     newEntry = false;
-    startTime = millis();  // Set startTime for current function run
+    turnDirection = 1;
+    startTime = millis();   // Set startTime for current function run
+    rotateTime = millis();  // Set rotateTime for current function run
   }
 
   if (millis() - startTime > timeout) {  // Has timeout happened yet?
     newEntry = true;                     // Start timeout again on next function call
-    return 2;                            // Timeout Code
-  } else {
-    int middleIrStrength = analogRead(middleIr);  // Middle IR Sensor Strenth
-    if (middleIrStrength < minIrStrength) {       // Middle Sensor detects a signal
-      static int prevIrStrength = 0;              // Check for unique IR read, as data is noisy
-      stopRobot();                                // Stop robot
-
+    turnDirection = 1;
+    return 2;  // Timeout Code
+  } else {     // No timeout yet
+    int middleIrStrength = analogRead(middleIr);
+    if (middleIrStrength < minIrStrength) {  // Middle Sensor detects a signal
+      static int prevIrStrength = 0;         // Check for unique IR read, as data is noisy
+      stopRobot();                           // Stop robot
       if (prevIrStrength != middleIrStrength) {
-        Serial.print("Ir Strength:");
-        Serial.println(middleIrStrength);
-        IrCount++;  // Increment number of times of detection
+        irCount++;  // Increment number of times of detection
         prevIrStrength = middleIrStrength;
-        if (IrCount >= checkIrNum) {  // Enough unique IR samples detected?
-          IrCount = 0;                // Reset IrCount
-          newEntry = true;            // Start timeout again on next function call
-          return 1;                   // Return success
+        if (irCount >= checkIrNum) {  // Enough unique IR samples detected?
+          Serial.println("IR Source Detected by locateIrSource");
+          irCount = 0;      // Reset irCount
+          newEntry = true;  // Start timeout again on next function call
+          return 1;         // Return success
         }
+      }
+    } else {
+      if (turnDirection % 2) {  // Check Left direction first
+        moveLeft(findDestRotateSpeed);
+      } else {
+        moveRight(findDestRotateSpeed);
+      }
+      if ((millis() - rotateTime) > (timeForOneDirectionIr * turnDirection)) {
+        Serial.println("Direction Changed for IR Search");
+        rotateTime = millis();
+        turnDirection++;
       }
     }
   }
@@ -46,38 +69,50 @@ int locateIrSource(int timeout) {
 
 // Move towards IR source. Switch to ultrasound when close enough to plant.
 // Returns 0 if not yet reached, 1 if reached, 2 if lost.
-int moveToIrSource() {
-  int middleIrStrength = analogRead(12);
+int moveToIrSource(int searchSpeed) {
+  static int irCount = 0;  // Number of times unique ultrasound was detected when confirming
+  int middleIrStrength = analogRead(middleIr);
+  if (!middleIrStrength) {
+    stopRobot();
+    return 0;  // Something went wrong with reading middleIrStrength
+  }
 
-  if (middleIrStrength == minIrStrength) {  // IR Signal has been lost
-    static bool turnDirection = 0;          // Check direction
-    int turnRobot;
-    if (turnDirection == 0) {  // Check Left direction first
-      moveLeft(125);
-      turnRobot = locateIrSource(2500);
-      if (turnRobot == 2) {  // If left direction timed out
-        turnDirection = 1;   // Check right direction next
-      }
-    } else if (turnDirection == 1) {  // Check right direction second
-      moveRight(125);
-      turnRobot = locateIrSource(5000);
-      if (turnRobot == 2) {  // If right direction timed out
-        turnDirection = 0;   // Reset turnDirection
-        return 0;            // TODO: Add code to account for loss of signal
-      }
+  if (middleIrStrength <= destIrThreshold) {
+    stopRobot();
+    irCount++;                    // Increment number of times of detection
+    if (irCount >= checkIrNum) {  // Enough Ultrasound samples detected?
+      Serial.println("IR Sensor Close enough, moveToIrSource complete");
+      irCount = 0;  // Reset usCount
+      return 1;     // Return success
+    }
+  } else if (middleIrStrength == minIrStrength) {  // IR Signal has been lost
+    return 2;
+  } else {
+    irCount = 0;     // Reset irCount if signal is found, for future function calls
+    moveFront(255);  // Move towards IR Source
+  }
+  return 0;
+}
+
+// IR close enough, switch to ultrasonic sensor now
+int moveToUsSource(int moveSpeed) {
+  static int usCount = 0;  // Number of times unique ultrasound was detected when confirming
+  int usStrength = ultrasonicDistance();
+
+  if (!usStrength) {
+    return 0;  // Something went wrong
+  }
+  if (usStrength <= destUsThreshold) {
+    stopRobot();
+    usCount++;                    // Increment number of times of detection
+    if (usCount >= checkUsNum) {  // Enough Ultrasound samples detected?
+      Serial.println("Destination found by moveToUsSource");
+      usCount = 0;  // Reset usCount
+      return 1;     // Return success
     }
   } else {
-    IrCount = 0;  // Reset IrCount if signal is found, for future function calls
+    moveFront(moveSpeed);
   }
-  if (middleIrStrength > destinationIrThreshold) {
-    moveFront(255);  // Move towards IR Source
-  } else if (middleIrStrength <= destinationIrThreshold) {
-    // IR close enough, switch to ultrasonic sensor now
-    if (ultrasonicDistance() <= destinationUltrasounsThreshold) {
-      return 1;
-    }
-  }
-
   return 0;
 }
 
@@ -93,11 +128,6 @@ long ultrasonicDistance() {
 
   // Reads the echoPin, returns sound travel time in microseconds
   long duration = pulseIn(echoPin, HIGH);
-
-  // Prints the distance in the Serial Monitor
-  Serial.print("Distance (cm): ");
-  Serial.println(duration / 2 * 0.034);
-
   return duration;
 }
 
@@ -105,42 +135,32 @@ long ultrasonicDistance() {
 // timeout controls how long robot rotates before giving up
 // Return 0 if not found yet, 1 if found, 2 if timeout
 int findColour(int speed, int timeout) {
-  unsigned int blue = RGB_sensor.readBlue();
+  delay(5000);
+  return 1;  // REMOVE THIS
 
-  // Timer Variables
-  static unsigned long startTime;
-  static bool newEntry = true;  // startTime must be set only once per function run to success
+  static unsigned long rotateTime = millis();
+  static int turnDirection = 1;  // Check direction Time
 
-  if (newEntry) {  // Is this the first function call for a specific check/operation?
-    newEntry = false;
-    startTime = millis();  // Set startTime for current function run
-  }
-  if (millis() - startTime > timeout) {  // Has timeout happened yet?
-    newEntry = true;                     // Start timeout again on next function call
-    return 2;
-  }
-
-  if (blue > 800) {  // If blue detected
-    stopRobot();
-    digitalWrite(pumpPin, LOW);  // Turn on pump
-    delay(5000);                 // TODO: Change with millisecond timeout
+  int frequency = pulseIn(colourPin, LOW);
+  if (frequency < blueFreqThreshold) {
+    digitalWrite(pumpPin, LOW);
+    delay(5000);
     digitalWrite(pumpPin, HIGH);
+    turnDirection = 1;
     return 1;
-  } else {  // Signal is lost
-    // Code to rotate until timeout occurs
-    static int turnDirection = 0;  // Check direction
-    static unsigned long startPlantTime = millis();
-    int turnTimeout = 500;
-    if (turnDirection) {
-      moveRight(speed);
+  } else {
+    if (turnDirection % 2) {  // Check Left direction first
+      moveLeft(findBlueRotateSpeed);
     } else {
-      moveLeft(speed);
+      moveRight(findBlueRotateSpeed);
     }
-    if (millis() - startPlantTime > timeout * (turnDirection + 1)) {
-      startPlantTime = millis();
+    if ((millis() - rotateTime) > (timeForOneDirectionBlue * turnDirection)) {
+      Serial.println("Direction Changed For Blue LED");
+      rotateTime = millis();
       turnDirection++;
     }
   }
+  return 0;
 }
 
 
@@ -154,7 +174,7 @@ void ultrasonicSetup() {
 
 // Colour Sensor and Water System Setup
 void waterSystemSetup() {
-  RGB_sensor.init();
   pinMode(pumpPin, OUTPUT);
   digitalWrite(pumpPin, HIGH);
+  pinMode(colourPin, INPUT);
 }
