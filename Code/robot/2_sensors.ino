@@ -1,42 +1,40 @@
-// Variables
-int checkIrNum = 50;         // Minimum number of times to confirm analog IR value
-int checkUsNum = 2;          // Check Ultrasonic Sensor
-int minIrStrength = 4095;    // Analog IR Value when not detected
-int destIrThreshold = 300;   // IR strength when close to destination
-long destUsThreshold = 250;  // Time to first pulse detection. distance(cm) * 2 / 0.034
-int blueSensitivity = 800;   // Sensitivity of colour sensor to blue
+// IR Variables for Wiggle
+const int findIrRotateSpeed = 175;       // Speed to rotate when searching for plant
+const int timeForOneDirectionIr = 1500;  // Time to rotate when searching IR, increased gradually
+// IR Variables to confirm signal
+const int checkIrNum = 50;       // Minimum number of times to confirm analog IR value
+const int minIrStrength = 4095;  // Analog IR Value when not detected
+// IR Variables to move to destination
+const int robotIrMoveSpeed = 175;  // Speed to move when using IR
+const int destIrThreshold = 1000;   // IR strength when close to destination
 
-int findDestRotateSpeed = 200;       // Speed to rotate when searching for plant
-int findBlueRotateSpeed = 150;       // Speed to rotate when searching for Blue LED
-int robotIrMoveSpeed = 255;          // Speed to move when using IR
-int robotUsMoveSpeed = 200;          // Speed to move when using ultrasound
-int timeForOneDirectionIr = 2000;    // Time to rotate when searching IR, increased gradually
-int timeForOneDirectionBlue = 1000;  // Time to rotate when searching Blue LEDs, increased gradually
+// Ultrasonic Variables
+const int checkUsNum = 2;          // Minimum number of times to confirm Ultrasonic values
+const int destUsThreshold = 500;   // Time to first pulse detection. distance(cm) * 2 / 0.034
+const int robotUsMoveSpeed = 175;  // Speed to move when using ultrasound
 
-const int blueFreqThreshold = 20;
+// Blue LED Variables
+const int blueSensitivity = 20;           // Sensitivity of colour sensor to blue
+const int findBlueRotateSpeed = 175;       // Speed to rotate when searching for Blue LED
+const int timeForOneDirectionBlue = 750;  // Time to rotate when searching Blue LEDs, increased gradually
 
 // Keep turning until the middle sensor reports a value.
 // Returns 0 if IR not found, 1 if IR found, 2 if function times out.
 int locateIrSource(int timeout) {
   // Timer Variables
   static unsigned long startTime;
-  static unsigned long rotateTime;
-  static int irCount = 0;        // Number of times unique IR was detected when confirming
-  static int turnDirection = 1;  // Check direction Time
-  static bool newEntry = true;   // startTime must be set only once per function run to success
+  static int irCount = 0;       // Number of times unique IR was detected when confirming
+  static bool newEntry = true;  // startTime must be set only once per function run to success
 
   if (newEntry) {  // Is this the first function call for a specific check/operation?
     newEntry = false;
-    turnDirection = 1;
-    startTime = millis();   // Set startTime for current function run
-    rotateTime = millis();  // Set rotateTime for current function run
+    startTime = millis();  // Set startTime for current function run
   }
 
   if (millis() - startTime > timeout) {  // Has timeout happened yet?
     newEntry = true;                     // Start timeout again on next function call
-    turnDirection = 1;
-    return 2;  // Timeout Code
-  } else {     // No timeout yet
+    return 2;                            // Timeout Code
+  } else {                               // No timeout yet
     int middleIrStrength = analogRead(middleIr);
     if (middleIrStrength < minIrStrength) {  // Middle Sensor detects a signal
       static int prevIrStrength = 0;         // Check for unique IR read, as data is noisy
@@ -51,17 +49,8 @@ int locateIrSource(int timeout) {
           return 1;         // Return success
         }
       }
-    } else {
-      if (turnDirection % 2) {  // Check Left direction first
-        moveLeft(findDestRotateSpeed);
-      } else {
-        moveRight(findDestRotateSpeed);
-      }
-      if ((millis() - rotateTime) > (timeForOneDirectionIr * turnDirection)) {
-        Serial.println("Direction Changed for IR Search");
-        rotateTime = millis();
-        turnDirection++;
-      }
+    } else {  // Wiggle robot to find IR
+      moveWiggle(findIrRotateSpeed, timeForOneDirectionIr);
     }
   }
   return 0;  // IR Not detected yet
@@ -69,13 +58,9 @@ int locateIrSource(int timeout) {
 
 // Move towards IR source. Switch to ultrasound when close enough to plant.
 // Returns 0 if not yet reached, 1 if reached, 2 if lost.
-int moveToIrSource(int searchSpeed) {
+int moveToIrSource() {
   static int irCount = 0;  // Number of times unique ultrasound was detected when confirming
   int middleIrStrength = analogRead(middleIr);
-  if (!middleIrStrength) {
-    stopRobot();
-    return 0;  // Something went wrong with reading middleIrStrength
-  }
 
   if (middleIrStrength <= destIrThreshold) {
     stopRobot();
@@ -88,14 +73,14 @@ int moveToIrSource(int searchSpeed) {
   } else if (middleIrStrength == minIrStrength) {  // IR Signal has been lost
     return 2;
   } else {
-    irCount = 0;     // Reset irCount if signal is found, for future function calls
-    moveFront(255);  // Move towards IR Source
+    irCount = 0;                  // Reset irCount if signal is found, for future function calls
+    moveFront(robotIrMoveSpeed);  // Move towards IR Source
   }
   return 0;
 }
 
 // IR close enough, switch to ultrasonic sensor now
-int moveToUsSource(int moveSpeed) {
+int moveToUsSource() {
   static int usCount = 0;  // Number of times unique ultrasound was detected when confirming
   int usStrength = ultrasonicDistance();
 
@@ -111,7 +96,8 @@ int moveToUsSource(int moveSpeed) {
       return 1;     // Return success
     }
   } else {
-    moveFront(moveSpeed);
+    usCount = 0;
+    moveFront(robotUsMoveSpeed);
   }
   return 0;
 }
@@ -128,6 +114,8 @@ long ultrasonicDistance() {
 
   // Reads the echoPin, returns sound travel time in microseconds
   long duration = pulseIn(echoPin, HIGH);
+  Serial.println(duration);
+  delay(50);
   return duration;
 }
 
@@ -135,30 +123,18 @@ long ultrasonicDistance() {
 // timeout controls how long robot rotates before giving up
 // Return 0 if not found yet, 1 if found, 2 if timeout
 int findColour(int speed, int timeout) {
-  delay(5000);
-  return 1;  // REMOVE THIS
-
-  static unsigned long rotateTime = millis();
-  static int turnDirection = 1;  // Check direction Time
+  // delay(5000);
+  // return 1;  // REMOVE THIS
 
   int frequency = pulseIn(colourPin, LOW);
-  if (frequency < blueFreqThreshold) {
-    digitalWrite(pumpPin, LOW);
-    delay(5000);
+  if (frequency < blueSensitivity) {  // Blue Colour found
+    stopRobot();
     digitalWrite(pumpPin, HIGH);
-    turnDirection = 1;
+    delay(5000);
+    digitalWrite(pumpPin, LOW);
     return 1;
   } else {
-    if (turnDirection % 2) {  // Check Left direction first
-      moveLeft(findBlueRotateSpeed);
-    } else {
-      moveRight(findBlueRotateSpeed);
-    }
-    if ((millis() - rotateTime) > (timeForOneDirectionBlue * turnDirection)) {
-      Serial.println("Direction Changed For Blue LED");
-      rotateTime = millis();
-      turnDirection++;
-    }
+    moveWiggle(findBlueRotateSpeed, timeForOneDirectionBlue);
   }
   return 0;
 }
@@ -174,7 +150,7 @@ void ultrasonicSetup() {
 
 // Colour Sensor and Water System Setup
 void waterSystemSetup() {
-  pinMode(pumpPin, OUTPUT);
-  digitalWrite(pumpPin, HIGH);
   pinMode(colourPin, INPUT);
+  pinMode(pumpPin, OUTPUT);
+  digitalWrite(pumpPin, LOW);
 }

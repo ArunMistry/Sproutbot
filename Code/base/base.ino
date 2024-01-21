@@ -27,6 +27,11 @@ void dataReceived(const uint8_t *mac, const uint8_t *incomingData, int len) {
   if (msgData.to[0] == 'B' && msgData.to[1] == '0') {
     digitalWrite(irPin, msgData.irMsg);
   }
+
+  // If Message was for plant, turn off LEDs
+  if (msgData.to[0] == 'P') {
+    digitalWrite(irPin, LOW);
+  }
 }
 
 void setup() {

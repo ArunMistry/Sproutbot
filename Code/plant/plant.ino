@@ -15,9 +15,9 @@ struct msgStruct {
 } msgData;
 
 // Variables
-const int irPin = 14;  // IR Emitter pin
-const int ledPin = 27; // Blue LEDs
-const int plantId = 0; // Unique Plant ID 
+const int irPin = 14;   // IR Emitter pin
+const int ledPin = 27;  // Blue LEDs
+const int plantId = 0;  // Unique Plant ID
 
 // callback function that will be executed when data is received
 void dataReceived(const uint8_t *mac, const uint8_t *incomingData, int len) {
@@ -27,15 +27,19 @@ void dataReceived(const uint8_t *mac, const uint8_t *incomingData, int len) {
 
   // Message is for the specific plant
   if (msgData.to[0] == 'P' && msgData.to[1] == (plantId + '0')) {
-      digitalWrite(irPin, msgData.irMsg);
-      digitalWrite(ledPin, msgData.ledMsg);
-      Serial.print("IR LED: ");
-      Serial.println(msgData.irMsg);
+    digitalWrite(irPin, msgData.irMsg);
+    digitalWrite(ledPin, msgData.ledMsg);
+  }
+
+  // If Message was for base, turn off LEDs
+  if (msgData.to[0] == 'P') {
+    digitalWrite(irPin, LOW);
+    digitalWrite(ledPin, LOW);
   }
 }
 
 void setup() {
-  Serial.begin(115200);  // Initialize Serial Monitor
+  Serial.begin(115200);    // Initialize Serial Monitor
   pinMode(irPin, OUTPUT);  // Set IR Sensor Pin as Output
 
   // Init ESP-NOW
