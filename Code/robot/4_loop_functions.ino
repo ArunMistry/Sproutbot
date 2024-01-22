@@ -1,7 +1,7 @@
 // Timing Variables
 int waitForSignalTimeout = 5000;
-int findPlantTimeout = 25000;
-int findBaseTimeout = 25000;
+int findPlantTimeout = 40000;
+int findBaseTimeout = 40000;
 int waterPlantTimeout = 20000;
 int msgSendDelay = 1000;
 
@@ -55,14 +55,28 @@ int findPlant(int plant) {
 
 // TODO: Add in Code for this
 int waterPlant(int plant) {
+  static bool plantWaterFinish = 0;
+  static unsigned long startTime = millis();  // Timer to ask plant to turn on LED
+
   if (repeatMsgSendDelay(msgSendDelay)) {  // Send message to turn on Blue LED
     sendEspNowMsg('P', plant + '0', 0, 1);
+  }
+
+  if (plantWaterFinish) {
+    moveBack(230);
+    if (millis() - startTime > 8000) {  // Has timeout happened?
+      startTime = millis();
+      plantWaterFinish = 0;
+      return 1;
+    } else {
+      return 0;
+    }
   }
 
   if (findColour(80, waterPlantTimeout)) {
     Serial.println("Plant Watered. Locate next plant or base");
     sendEspNowMsg('P', plant + '0', 0, 0);
-    return 1;  // Plant is watered
+    plantWaterFinish = 1;
   }
   return 0;
 }

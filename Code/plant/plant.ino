@@ -15,32 +15,32 @@ struct msgStruct {
 } msgData;
 
 // Variables
-const int irPin = 14;   // IR Emitter pin
+const int irPin = 14;  // IR Emitter pin
 const int ledPin = 27;  // Blue LEDs
 const int plantId = 0;  // Unique Plant ID
 
 // callback function that will be executed when data is received
 void dataReceived(const uint8_t *mac, const uint8_t *incomingData, int len) {
   memcpy(&msgData, incomingData, sizeof(msgData));
-  Serial.print("Bytes received: ");
-  Serial.println(len);
+  Serial.println("Message Received");
 
   // Message is for the specific plant
   if (msgData.to[0] == 'P' && msgData.to[1] == (plantId + '0')) {
-    digitalWrite(irPin, msgData.irMsg);
-    digitalWrite(ledPin, msgData.ledMsg);
-  }
-
-  // If Message was for base, turn off LEDs
-  if (msgData.to[0] == 'P') {
+    digitalWrite(irPin, irPinStatus);
+    digitalWrite(ledPin, ledPinStatus);
+    digitalWrite(2, msgData.irMsg);
+  } else if (msgData.to[0] == 'B') {
     digitalWrite(irPin, LOW);
     digitalWrite(ledPin, LOW);
+    digitalWrite(2, LOW);
   }
 }
 
 void setup() {
-  Serial.begin(115200);    // Initialize Serial Monitor
-  pinMode(irPin, OUTPUT);  // Set IR Sensor Pin as Output
+  Serial.begin(115200);     // Initialize Serial Monitor
+  pinMode(irPin, OUTPUT);   // Set IR Sensor Pin as Output
+  pinMode(ledPin, OUTPUT);  // Set IR Sensor Pin as Output
+  pinMode(2, OUTPUT);       // Set IR Sensor Pin as Output
 
   // Init ESP-NOW
   WiFi.mode(WIFI_STA);  // Set device as a Wi-Fi Station

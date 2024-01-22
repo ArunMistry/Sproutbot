@@ -20,23 +20,21 @@ const int irPin = 14;  // IR Emitter pin
 // callback function that will be executed when data is received
 void dataReceived(const uint8_t *mac, const uint8_t *incomingData, int len) {
   memcpy(&msgData, incomingData, sizeof(msgData));
-  Serial.print("Bytes received: ");
-  Serial.println(len);
 
   // Message is for base
   if (msgData.to[0] == 'B' && msgData.to[1] == '0') {
     digitalWrite(irPin, msgData.irMsg);
-  }
-
-  // If Message was for plant, turn off LEDs
-  if (msgData.to[0] == 'P') {
+    digitalWrite(2, msgData.irMsg);
+  } else if (msgData.to[0] == 'P') {
     digitalWrite(irPin, LOW);
+    digitalWrite(2, LOW);
   }
 }
 
 void setup() {
   Serial.begin(115200);    // Initialize Serial Monitor
   pinMode(irPin, OUTPUT);  // Set IR Sensor Pin as Output
+  pinMode(2, OUTPUT);      // Set IR Sensor Pin as Output
 
   // Init ESP-NOW
   WiFi.mode(WIFI_STA);  // Set device as a Wi-Fi Station

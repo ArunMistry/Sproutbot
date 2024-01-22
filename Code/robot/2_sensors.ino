@@ -1,21 +1,21 @@
 // IR Variables for Wiggle
 const int findIrRotateSpeed = 175;       // Speed to rotate when searching for plant
-const int timeForOneDirectionIr = 1500;  // Time to rotate when searching IR, increased gradually
+const int timeForOneDirectionIr = 2500;  // Time to rotate when searching IR, increased gradually
 // IR Variables to confirm signal
 const int checkIrNum = 50;       // Minimum number of times to confirm analog IR value
 const int minIrStrength = 4095;  // Analog IR Value when not detected
 // IR Variables to move to destination
 const int robotIrMoveSpeed = 175;  // Speed to move when using IR
-const int destIrThreshold = 1000;   // IR strength when close to destination
+const int destIrThreshold = 1000;  // IR strength when close to destination
 
 // Ultrasonic Variables
 const int checkUsNum = 2;          // Minimum number of times to confirm Ultrasonic values
-const int destUsThreshold = 500;   // Time to first pulse detection. distance(cm) * 2 / 0.034
+const int destUsThreshold = 650;   // Time to first pulse detection. distance(cm) * 2 / 0.034
 const int robotUsMoveSpeed = 175;  // Speed to move when using ultrasound
 
 // Blue LED Variables
-const int blueSensitivity = 20;           // Sensitivity of colour sensor to blue
-const int findBlueRotateSpeed = 175;       // Speed to rotate when searching for Blue LED
+const int blueSensitivity = 100;           // Sensitivity of colour sensor to blue
+const int findBlueRotateSpeed = 175;      // Speed to rotate when searching for Blue LED
 const int timeForOneDirectionBlue = 750;  // Time to rotate when searching Blue LEDs, increased gradually
 
 // Keep turning until the middle sensor reports a value.
@@ -33,9 +33,11 @@ int locateIrSource(int timeout) {
 
   if (millis() - startTime > timeout) {  // Has timeout happened yet?
     newEntry = true;                     // Start timeout again on next function call
-    return 2;                            // Timeout Code
-  } else {                               // No timeout yet
+    stopRobot();
+    return 2;
+  } else {     // No timeout yet
     int middleIrStrength = analogRead(middleIr);
+    // Serial.println(middleIrStrength);
     if (middleIrStrength < minIrStrength) {  // Middle Sensor detects a signal
       static int prevIrStrength = 0;         // Check for unique IR read, as data is noisy
       stopRobot();                           // Stop robot
@@ -114,7 +116,6 @@ long ultrasonicDistance() {
 
   // Reads the echoPin, returns sound travel time in microseconds
   long duration = pulseIn(echoPin, HIGH);
-  Serial.println(duration);
   delay(50);
   return duration;
 }
