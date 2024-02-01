@@ -2,8 +2,8 @@
 const int findIrRotateSpeed = 175;       // Speed to rotate when searching for plant
 const int timeForOneDirectionIr = 2500;  // Time to rotate when searching IR, increased gradually
 // IR Variables to confirm signal
-const int checkIrNum = 50;       // Minimum number of times to confirm analog IR value
-const int minIrStrength = 4095;  // Analog IR Value when not detected
+const int checkIrNum = 50;            // Minimum number of times to confirm analog IR value
+const uint16_t minIrStrength = 4095;  // Analog IR Value when not detected
 // IR Variables to move to destination
 const int robotIrMoveSpeed = 175;  // Speed to move when using IR
 const int destIrThreshold = 1000;  // IR strength when close to destination
@@ -14,48 +14,86 @@ const int destUsThreshold = 650;   // Time to first pulse detection. distance(cm
 const int robotUsMoveSpeed = 175;  // Speed to move when using ultrasound
 
 // Blue LED Variables
-const int blueSensitivity = 100;           // Sensitivity of colour sensor to blue
+const int blueSensitivity = 100;          // Sensitivity of colour sensor to blue
 const int findBlueRotateSpeed = 175;      // Speed to rotate when searching for Blue LED
 const int timeForOneDirectionBlue = 750;  // Time to rotate when searching Blue LEDs, increased gradually
 
 // Keep turning until the middle sensor reports a value.
 // Returns 0 if IR not found, 1 if IR found, 2 if function times out.
 int locateIrSource(int timeout) {
-  // Timer Variables
-  static unsigned long startTime;
-  static int irCount = 0;       // Number of times unique IR was detected when confirming
-  static bool newEntry = true;  // startTime must be set only once per function run to success
+  static unsigned long startTime;  // Timer Variables
 
-  if (newEntry) {  // Is this the first function call for a specific check/operation?
-    newEntry = false;
-    startTime = millis();  // Set startTime for current function run
-  }
+  // Enum for locateIrSource
+  static enum {
+    TIMEOUT_START,
+    TIMEOUT_WAIT,
+    IR_DETECT,
+    IR_SUCCESS,
+    TIMEOUT_END
+  } enumlocateIrSource = TIMEOUT_START;
 
-  if (millis() - startTime > timeout) {  // Has timeout happened yet?
-    newEntry = true;                     // Start timeout again on next function call
-    stopRobot();
-    return 2;
-  } else {     // No timeout yet
-    int middleIrStrength = analogRead(middleIr);
-    // Serial.println(middleIrStrength);
-    if (middleIrStrength < minIrStrength) {  // Middle Sensor detects a signal
-      static int prevIrStrength = 0;         // Check for unique IR read, as data is noisy
-      stopRobot();                           // Stop robot
-      if (prevIrStrength != middleIrStrength) {
-        irCount++;  // Increment number of times of detection
-        prevIrStrength = middleIrStrength;
-        if (irCount >= checkIrNum) {  // Enough unique IR samples detected?
-          Serial.println("IR Source Detected by locateIrSource");
-          irCount = 0;      // Reset irCount
-          newEntry = true;  // Start timeout again on next function call
-          return 1;         // Return success
+  switch (enumlocateIrSource) {
+    case TIMEOUT_START:  // Start Timeout
+      {
+        Serial.println("Timeout Started for locateIrSource");
+        startTime = millis();
+        enumlocateIrSource = TIMEOUT_WAIT;
+        break;
+      }
+    case TIMEOUT_WAIT:  // Wait until Timeout
+      if (millis() - startTime > timeout) {
+        enumlocateIrSource = TIMEOUT_END;
+      } else {
+        moveWiggle(findIrRotateSpeed, timeForOneDirectionIr);  // Move robot to find signal
+        if (analogRead(middleIr) < minIrStrength) {
+          stopRobot();  // Stop robot if signal is found
+          enumlocateIrSource = IR_DETECT;
         }
       }
-    } else {  // Wiggle robot to find IR
-      moveWiggle(findIrRotateSpeed, timeForOneDirectionIr);
-    }
+      break;
+    case IR_DETECT:  // If an IR Signal is found
+      {
+        uint16_t middleIrStrength = analogRead(middleIr);  // Get strength of IR Sensor
+        static uint16_t prevIrStrength = 0;                // Check for unique IR read
+        static int irCount = 0;                            // Number of times unique IR was detected when confirming
+
+        if (middleIrStrength < minIrStrength) {
+          if (prevIrStrength != middleIrStrength) {  // If IR value is different from previous
+            irCount++;
+            prevIrStrength = middleIrStrength;
+            if (irCount >= checkIrNum) {  // Enough unique IR samples detected?
+              irCount = 0;                // Reset irCount
+              enumlocateIrSource = IR_SUCCESS;
+            }
+          }
+        } else {
+          irCount = 0;  // Reset irCount
+          enumlocateIrSource = TIMEOUT_WAIT;
+        }
+        break;
+      }
+    case IR_SUCCESS:  // If an IR Signal is confirmed
+      {
+        Serial.println("IR Source Detected by locateIrSource");
+        stopRobot();
+        enumlocateIrSource = TIMEOUT_START;
+        return 1;
+      }
+    case TIMEOUT_END:  // Timeout Occured
+      {
+        Serial.println("Plant Not Found");
+        stopRobot();
+        enumlocateIrSource = TIMEOUT_START;
+        return 2;
+      }
+    default:
+      {
+        Serial.println("Error, Check waitForSignal");
+        enumlocateIrSource = TIMEOUT_START;
+        break;
+      }
   }
-  return 0;  // IR Not detected yet
+  return 0;
 }
 
 // Move towards IR source. Switch to ultrasound when close enough to plant.

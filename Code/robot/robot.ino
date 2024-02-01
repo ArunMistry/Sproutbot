@@ -2,18 +2,6 @@
 #include <esp_now.h>
 #include <WiFi.h>
 
-// Enum for loop()
-enum {
-  WAIT,
-  FIND_PLANT,
-  MOVE_PLANT,
-  MOVE_CLOSER_TO_PLANT,
-  WATER_PLANT,
-  FIND_BASE,
-  MOVE_BASE,
-  MOVE_CLOSER_TO_BASE
-} loopStep = WAIT;
-
 // Define Ultrasonic Sensor Pins
 const int trigPin = 32;
 const int echoPin = 35;
@@ -37,8 +25,9 @@ const int freq = 30000;  // PWM Frequency
 const int motorPwmChannel = 0;
 const int resolution = 8;  // Resolution of Duty Cycle
 
-// Define number of plants
-const int numPlants = 1;
+// Plant Variables
+const int numPlants = 1; // Max Number of plants
+int goToPlant = 0;  // Plant Number to Water
 
 void setup() {
   Serial.begin(115200);  // Start Serial Comm & Logging
@@ -49,8 +38,17 @@ void setup() {
 }
 
 void loop() {
-  // Variables
-  static int goToPlant = 0;
+  // Enum for loop()
+  static enum {
+    WAIT,
+    FIND_PLANT,
+    MOVE_PLANT,
+    MOVE_CLOSER_TO_PLANT,
+    WATER_PLANT,
+    FIND_BASE,
+    MOVE_BASE,
+    MOVE_CLOSER_TO_BASE
+  } loopStep = WAIT;
 
   switch (loopStep) {
     case WAIT:

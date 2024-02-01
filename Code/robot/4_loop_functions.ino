@@ -5,32 +5,42 @@ int findBaseTimeout = 40000;
 int waterPlantTimeout = 20000;
 int msgSendDelay = 1000;
 
-// Timer before a message is sent repeatedly
-int repeatMsgSendDelay(int delayTime) {
-  static unsigned long startTime = millis();  // Timer to ask plant to turn on LED
-  if (millis() - startTime > delayTime) {     // Has timeout happened?
-    startTime = millis();
-    return 1;
-  }
-  return 0;
-}
-
 // Wait for a plant to request water. Simple Timer for now
 int waitForSignal() {
-  // Timer Variables
-  static unsigned long startTime = millis();
-  static bool newEntry = true;  // startTime must be set only once per function run to success
+  static unsigned long startTime = millis();  // Timer Variables
 
-  if (newEntry) {  // Is this the first function call for a specific check/operation?
-    newEntry = false;
-    startTime = millis();  // Set startTime for current function run
-    Serial.println("Timeout Started for waitForSignal");
-  }
+  // Enum for waitForSignal
+  static enum {
+    TIMEOUT_START,
+    TIMEOUT_WAIT,
+    TIMEOUT_END
+  } enumWaitForSignal = TIMEOUT_START;
 
-  if (millis() - startTime > waitForSignalTimeout) {  // Timeout happened yet?
-    newEntry = true;                                  // Start timeout again on next function call
-    Serial.println("waitForSignal over. Time to locate plant");
-    return 1;  // Timeout happened
+  switch (enumWaitForSignal) {
+    case TIMEOUT_START:  // Start Timeout
+      {
+        Serial.println("Timeout Started for waitForSignal");
+        startTime = millis();
+        enumWaitForSignal = TIMEOUT_WAIT;
+        break;
+      }
+    case TIMEOUT_WAIT:  // Wait until Timeout
+      if (millis() - startTime > waitForSignalTimeout) {
+        enumWaitForSignal = TIMEOUT_END;
+      }
+      break;
+    case TIMEOUT_END:  // Timeout Occured
+      {
+        Serial.println("waitForSignal over. Time to locate plant");
+        enumWaitForSignal = TIMEOUT_START;
+        return 1;
+      }
+    default:
+      {
+        Serial.println("Error, Check waitForSignal");
+        enumWaitForSignal = TIMEOUT_START;
+        break;
+      }
   }
   return 0;
 }
@@ -55,12 +65,13 @@ int findPlant(int plant) {
 
 // TODO: Add in Code for this
 int waterPlant(int plant) {
-  static bool plantWaterFinish = 0;
-  static unsigned long startTime = millis();  // Timer to ask plant to turn on LED
-
   if (repeatMsgSendDelay(msgSendDelay)) {  // Send message to turn on Blue LED
     sendEspNowMsg('P', plant + '0', 0, 1);
   }
+
+  static bool plantWaterFinish = 0;
+  static unsigned long startTime = millis();  // Timer to ask plant to turn on LED
+
 
   if (plantWaterFinish) {
     moveBack(230);

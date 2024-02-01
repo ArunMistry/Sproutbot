@@ -62,3 +62,13 @@ void sendEspNowMsg(char toMsg, char toNum, bool irValue, bool ledValue)
     esp_now_send(broadcastAddress, (uint8_t *)&msgData, sizeof(msgData));
   }
 }
+
+// Timer before a message is sent repeatedly
+int repeatMsgSendDelay(int delayTime) {
+  static unsigned long startTime = millis();  // Timer to ask plant to turn on LED
+  if (millis() - startTime > delayTime) {     // Has timeout happened?
+    startTime = millis();
+    return 1;
+  }
+  return 0;
+}
