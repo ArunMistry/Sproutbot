@@ -8,16 +8,6 @@ const uint16_t minIrStrength = 4095;  // Analog IR Value when not detected
 const int robotIrMoveSpeed = 175;  // Speed to move when using IR
 const int destIrThreshold = 1000;  // IR strength when close to destination
 
-// Ultrasonic Variables
-const int checkUsNum = 2;          // Minimum number of times to confirm Ultrasonic values
-const int destUsThreshold = 650;   // Time to first pulse detection. distance(cm) * 2 / 0.034
-const int robotUsMoveSpeed = 175;  // Speed to move when using ultrasound
-
-// Blue LED Variables
-const int blueSensitivity = 100;          // Sensitivity of colour sensor to blue
-const int findBlueRotateSpeed = 175;      // Speed to rotate when searching for Blue LED
-const int timeForOneDirectionBlue = 750;  // Time to rotate when searching Blue LEDs, increased gradually
-
 // Keep turning until the middle sensor reports a value.
 // Returns 0 if IR not found, 1 if IR found, 2 if function times out.
 int locateIrSource(int timeout) {
@@ -43,6 +33,7 @@ int locateIrSource(int timeout) {
     case TIMEOUT_WAIT:  // Wait until Timeout
       if (millis() - startTime > timeout) {
         enumlocateIrSource = TIMEOUT_END;
+        Serial.println("Timeout for finding IR");
       } else {
         moveWiggle(findIrRotateSpeed, timeForOneDirectionIr);  // Move robot to find signal
         if (analogRead(middleIr) < minIrStrength) {
@@ -119,77 +110,3 @@ int moveToIrSource() {
   return 0;
 }
 
-// IR close enough, switch to ultrasonic sensor now
-int moveToUsSource() {
-  static int usCount = 0;  // Number of times unique ultrasound was detected when confirming
-  int usStrength = ultrasonicDistance();
-
-  if (!usStrength) {
-    return 0;  // Something went wrong
-  }
-  if (usStrength <= destUsThreshold) {
-    stopRobot();
-    usCount++;                    // Increment number of times of detection
-    if (usCount >= checkUsNum) {  // Enough Ultrasound samples detected?
-      Serial.println("Destination found by moveToUsSource");
-      usCount = 0;  // Reset usCount
-      return 1;     // Return success
-    }
-  } else {
-    usCount = 0;
-    moveFront(robotUsMoveSpeed);
-  }
-  return 0;
-}
-
-// Return Ultrasonic Time
-long ultrasonicDistance() {
-  // Clears the trigPin
-  digitalWrite(trigPin, LOW);
-  delayMicroseconds(2);
-  // Sets the trigPin on HIGH state for 10 micro seconds
-  digitalWrite(trigPin, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(trigPin, LOW);
-
-  // Reads the echoPin, returns sound travel time in microseconds
-  long duration = pulseIn(echoPin, HIGH);
-  delay(50);
-  return duration;
-}
-
-// Detect Colour by rotating robot left and right
-// timeout controls how long robot rotates before giving up
-// Return 0 if not found yet, 1 if found, 2 if timeout
-int findColour(int speed, int timeout) {
-  // delay(5000);
-  // return 1;  // REMOVE THIS
-
-  int frequency = pulseIn(colourPin, LOW);
-  if (frequency < blueSensitivity) {  // Blue Colour found
-    stopRobot();
-    digitalWrite(pumpPin, HIGH);
-    delay(5000);
-    digitalWrite(pumpPin, LOW);
-    return 1;
-  } else {
-    moveWiggle(findBlueRotateSpeed, timeForOneDirectionBlue);
-  }
-  return 0;
-}
-
-
-// -------- Sensor Setup Functions -------- //
-
-// Set Up Ultrasonic Sensor Pins
-void ultrasonicSetup() {
-  pinMode(trigPin, OUTPUT);
-  pinMode(echoPin, INPUT);
-}
-
-// Colour Sensor and Water System Setup
-void waterSystemSetup() {
-  pinMode(colourPin, INPUT);
-  pinMode(pumpPin, OUTPUT);
-  digitalWrite(pumpPin, LOW);
-}

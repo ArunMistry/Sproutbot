@@ -1,40 +1,20 @@
 // Header Files
 #include <esp_now.h>
 #include <WiFi.h>
-#include "ESPAsyncWebServer.h"
+#include <ESPAsyncWebServer.h>
+#include <AsyncTCP.h>
 #include <Arduino_JSON.h>
-
-// Define Ultrasonic Sensor Pins
-const int trigPin = 32;
-const int echoPin = 35;
-
-// Define IR Sensor Pins (Only ADC1)
-const int middleIr = 34;
-
-// Define motor control pins
-const int enablePin = 14;   // Enable
-const int motor1Pin1 = 27;  // Motor 1
-const int motor1Pin2 = 26;
-const int motor2Pin1 = 33;  // Motor 2
-const int motor2Pin2 = 25;
-
-// Define pump and colour sensor pin
-const int pumpPin = 13;  // Centre hole is outlet, Edge hole is outlet
-const int colourPin = 39;
-
-// Setting PWM properties for motor
-const int freq = 30000;  // PWM Frequency
-const int motorPwmChannel = 0;
-const int resolution = 8;  // Resolution of Duty Cycle
+#include "pins.h"
 
 // Plant Variables
-const int numPlants = 1; // Max Number of plants
-int goToPlant = 0;  // Plant Number to Water
+const int numPlants = 1;  // Max Number of plants
+int goToPlant = 0;        // Plant Number to Water
 
 void setup() {
   Serial.begin(115200);  // Start Serial Comm & Logging
   motorSetup();          // Setup motor pins and PWM
-  espNowSetup();         // Setup Wifi & ESP-NOW
+  wifiSetup();           // Setup wifi protocols
+  espNowSetup();         // Setup ESP-NOW
   ultrasonicSetup();     // Ultrasonic Sensor Setup
   waterSystemSetup();    // Colour Sensor and Pump Setup
 }

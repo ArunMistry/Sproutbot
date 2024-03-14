@@ -1,3 +1,8 @@
+// Setting PWM properties for motor
+const int freq = 30000;  // PWM Frequency
+const int motorPwmChannel = 0;
+const int resolution = 8;  // Resolution of Duty Cycle
+
 // Motor Speed Control to smooth speed changes
 const float speedFrac = 0.05;     // How much speed must change by each update. Larger = Faster changes
 const int speedChangeDelay = 50;  // How long to wait before updating speed
