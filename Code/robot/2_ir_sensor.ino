@@ -36,7 +36,7 @@ int locateIrSource(int timeout) {
         Serial.println("Timeout for finding IR");
       } else {
         moveWiggle(findIrRotateSpeed, timeForOneDirectionIr);  // Move robot to find signal
-        if (analogRead(middleIr) < minIrStrength) {
+        if (analogRead(irOpAmpPin) < minIrStrength) {
           stopRobot();  // Stop robot if signal is found
           enumlocateIrSource = IR_DETECT;
         }
@@ -44,14 +44,14 @@ int locateIrSource(int timeout) {
       break;
     case IR_DETECT:  // If an IR Signal is found
       {
-        uint16_t middleIrStrength = analogRead(middleIr);  // Get strength of IR Sensor
+        uint16_t irOpAmpPinStrength = analogRead(irOpAmpPin);  // Get strength of IR Sensor
         static uint16_t prevIrStrength = 0;                // Check for unique IR read
         static int irCount = 0;                            // Number of times unique IR was detected when confirming
 
-        if (middleIrStrength < minIrStrength) {
-          if (prevIrStrength != middleIrStrength) {  // If IR value is different from previous
+        if (irOpAmpPinStrength < minIrStrength) {
+          if (prevIrStrength != irOpAmpPinStrength) {  // If IR value is different from previous
             irCount++;
-            prevIrStrength = middleIrStrength;
+            prevIrStrength = irOpAmpPinStrength;
             if (irCount >= checkIrNum) {  // Enough unique IR samples detected?
               irCount = 0;                // Reset irCount
               enumlocateIrSource = IR_SUCCESS;
@@ -91,9 +91,9 @@ int locateIrSource(int timeout) {
 // Returns 0 if not yet reached, 1 if reached, 2 if lost.
 int moveToIrSource() {
   static int irCount = 0;  // Number of times unique ultrasound was detected when confirming
-  int middleIrStrength = analogRead(middleIr);
+  int irOpAmpPinStrength = analogRead(irOpAmpPin);
 
-  if (middleIrStrength <= destIrThreshold) {
+  if (irOpAmpPinStrength <= destIrThreshold) {
     stopRobot();
     irCount++;                    // Increment number of times of detection
     if (irCount >= checkIrNum) {  // Enough Ultrasound samples detected?
@@ -101,7 +101,7 @@ int moveToIrSource() {
       irCount = 0;  // Reset usCount
       return 1;     // Return success
     }
-  } else if (middleIrStrength == minIrStrength) {  // IR Signal has been lost
+  } else if (irOpAmpPinStrength == minIrStrength) {  // IR Signal has been lost
     return 2;
   } else {
     irCount = 0;                  // Reset irCount if signal is found, for future function calls

@@ -28,16 +28,16 @@ int moveToUsSource() {
 
 // Return Ultrasonic Time
 long ultrasonicDistance() {
-  // Clears the trigPin
-  digitalWrite(trigPin, LOW);
+  // Clears the robotUsTrigPin
+  digitalWrite(robotUsTrigPin, LOW);
   delayMicroseconds(2);
-  // Sets the trigPin on HIGH state for 10 micro seconds
-  digitalWrite(trigPin, HIGH);
+  // Sets the robotUsTrigPin on HIGH state for 10 micro seconds
+  digitalWrite(robotUsTrigPin, HIGH);
   delayMicroseconds(10);
-  digitalWrite(trigPin, LOW);
+  digitalWrite(robotUsTrigPin, LOW);
 
-  // Reads the echoPin, returns sound travel time in microseconds
-  long duration = pulseIn(echoPin, HIGH);
+  // Reads the robotUsEchoPin, returns sound travel time in microseconds
+  long duration = pulseIn(robotUsEchoPin, HIGH);
   delay(50);
   return duration;
 }
@@ -45,6 +45,6 @@ long ultrasonicDistance() {
 // -------- Sensor Setup Functions -------- //
 // Set Up Ultrasonic Sensor Pins
 void ultrasonicSetup() {
-  pinMode(trigPin, OUTPUT);
-  pinMode(echoPin, INPUT);
+  pinMode(robotUsTrigPin, OUTPUT);
+  pinMode(robotUsEchoPin, INPUT);
 }

@@ -25,42 +25,42 @@ int speedControl(int speed) {
 void stopRobot() {
   ledcWrite(motorPwmChannel, 0);
   turnDirection = 1;
-  digitalWrite(motor1Pin1, LOW);
-  digitalWrite(motor1Pin2, LOW);
-  digitalWrite(motor2Pin1, LOW);
-  digitalWrite(motor2Pin2, LOW);
+  digitalWrite(motorLPin1, LOW);
+  digitalWrite(motorLPin2, LOW);
+  digitalWrite(motorRPin1, LOW);
+  digitalWrite(motorRPin2, LOW);
 }
 
 void moveFront(int speed) {
   ledcWrite(motorPwmChannel, speedControl(speed));
-  digitalWrite(motor1Pin1, LOW);
-  digitalWrite(motor1Pin2, HIGH);
-  digitalWrite(motor2Pin1, LOW);
-  digitalWrite(motor2Pin2, HIGH);
+  digitalWrite(motorLPin1, LOW);
+  digitalWrite(motorLPin2, HIGH);
+  digitalWrite(motorRPin1, LOW);
+  digitalWrite(motorRPin2, HIGH);
 }
 
 void moveBack(int speed) {
   ledcWrite(motorPwmChannel, speedControl(speed));
-  digitalWrite(motor1Pin1, HIGH);
-  digitalWrite(motor1Pin2, LOW);
-  digitalWrite(motor2Pin1, HIGH);
-  digitalWrite(motor2Pin2, LOW);
+  digitalWrite(motorLPin1, HIGH);
+  digitalWrite(motorLPin2, LOW);
+  digitalWrite(motorRPin1, HIGH);
+  digitalWrite(motorRPin2, LOW);
 }
 
 void moveLeft(int speed) {
   ledcWrite(motorPwmChannel, speedControl(speed));
-  digitalWrite(motor1Pin1, HIGH);
-  digitalWrite(motor1Pin2, LOW);
-  digitalWrite(motor2Pin1, LOW);
-  digitalWrite(motor2Pin2, HIGH);
+  digitalWrite(motorLPin1, HIGH);
+  digitalWrite(motorLPin2, LOW);
+  digitalWrite(motorRPin1, LOW);
+  digitalWrite(motorRPin2, HIGH);
 }
 
 void moveRight(int speed) {
   ledcWrite(motorPwmChannel, speedControl(speed));
-  digitalWrite(motor1Pin1, LOW);
-  digitalWrite(motor1Pin2, HIGH);
-  digitalWrite(motor2Pin1, HIGH);
-  digitalWrite(motor2Pin2, LOW);
+  digitalWrite(motorLPin1, LOW);
+  digitalWrite(motorLPin2, HIGH);
+  digitalWrite(motorRPin1, HIGH);
+  digitalWrite(motorRPin2, LOW);
 }
 
 // Rotate in one direction, then another direction
@@ -85,10 +85,10 @@ void moveWiggle(int rotateSpeed, int rotateTime) {
 void motorSetup() {
   // Set Motor Pins as output:
   pinMode(enablePin, OUTPUT);
-  pinMode(motor1Pin1, OUTPUT);
-  pinMode(motor1Pin2, OUTPUT);
-  pinMode(motor2Pin1, OUTPUT);
-  pinMode(motor2Pin2, OUTPUT);
+  pinMode(motorLPin1, OUTPUT);
+  pinMode(motorLPin2, OUTPUT);
+  pinMode(motorRPin1, OUTPUT);
+  pinMode(motorRPin2, OUTPUT);
 
   // Setup PWM and attach channel to GPIO pin
   ledcSetup(motorPwmChannel, freq, resolution);
