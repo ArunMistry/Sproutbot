@@ -37,7 +37,7 @@ int waterPlant(int plant) {
   static unsigned long startTime = millis();  // Timer to ask plant to turn on LED
 
   if (plantWaterFinish) {
-    moveBack(230);
+    moveBack(160);
     if (millis() - startTime > 8000) {  // Has timeout happened?
       startTime = millis();
       plantWaterFinish = 0;
