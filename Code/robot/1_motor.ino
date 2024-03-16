@@ -8,12 +8,21 @@ const float speedFrac = 0.05;     // How much speed must change by each update. 
 const int speedChangeDelay = 50;  // How long to wait before updating speed
 float speedSmoothed = 0;          // Previous speed value
 int turnDirection = 1;            // Check direction when wiggling
+int currentMovementState = 0;     // Tracks Current Movement State. Movement States: 0 = stopRobot; 1 = moveFront; 2 = moveBack; 3 = moveLeft; 4 = moveRight
+int previousMovementState = 0;    // Tracks Previous Movement State.
 
 int speedControl(int speed) {
   static unsigned long startTime = millis();
   if (millis() - startTime > speedChangeDelay) {  // Has timeout happened yet?
     startTime = millis();                         // Reset startTime
-    speedSmoothed = (speed * speedFrac) + (speedSmoothed * (1 - speedFrac));
+    if (currentMovementState != previousMovementState){
+      speedSmoothed = 150;
+    }
+    else{
+      speedSmoothed = (speed * speedFrac) + (speedSmoothed * (1 - speedFrac));
+    }
+    //Serial.println(speedSmoothed);
+    previousMovementState = currentMovementState;
     // if (speedSmoothed < speed) {
     //   speedSmoothed += 5;
     // }
@@ -23,6 +32,7 @@ int speedControl(int speed) {
 
 // Motor functions
 void stopRobot() {
+  currentMovementState = 0;
   ledcWrite(motorPwmChannel, 0);
   turnDirection = 1;
   digitalWrite(motorLPin1, LOW);
@@ -32,6 +42,7 @@ void stopRobot() {
 }
 
 void moveFront(int speed) {
+  currentMovementState = 1;
   ledcWrite(motorPwmChannel, speedControl(speed));
   digitalWrite(motorLPin1, LOW);
   digitalWrite(motorLPin2, HIGH);
@@ -40,6 +51,7 @@ void moveFront(int speed) {
 }
 
 void moveBack(int speed) {
+  currentMovementState = 2;
   ledcWrite(motorPwmChannel, speedControl(speed));
   digitalWrite(motorLPin1, HIGH);
   digitalWrite(motorLPin2, LOW);
@@ -48,6 +60,7 @@ void moveBack(int speed) {
 }
 
 void moveLeft(int speed) {
+  currentMovementState = 3;
   ledcWrite(motorPwmChannel, speedControl(speed));
   digitalWrite(motorLPin1, HIGH);
   digitalWrite(motorLPin2, LOW);
@@ -56,6 +69,7 @@ void moveLeft(int speed) {
 }
 
 void moveRight(int speed) {
+  currentMovementState = 4;
   ledcWrite(motorPwmChannel, speedControl(speed));
   digitalWrite(motorLPin1, LOW);
   digitalWrite(motorLPin2, HIGH);
@@ -74,7 +88,7 @@ void moveWiggle(int rotateSpeed, int rotateTime) {
   }
   if ((millis() - totalTime) > (rotateTime * turnDirection)) {
     Serial.println("Direction Changed when wiggling");
-    speedSmoothed = 0;
+    //speedSmoothed = 0;
     totalTime = millis();
     turnDirection++;
   }
