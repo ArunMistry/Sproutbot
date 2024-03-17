@@ -5,12 +5,10 @@ int waitForSignalTimeout = 5000;
 // from[2]: From { B0 = Base, R0 = Robot, P0 to P9 = Specific Plant }
 // to[2]  : To { B0 = Base, R0 = Robot, P0 to P9 = Specific Plant }
 // irMsg  : 0 = Turn off IR, 1 = Turn on IR
-// ledMsg : 0 = turn off Blue LEDs, 1 = turn on Blue LEDs
 struct msgStruct {
   char from[2];
   char to[2];
   bool irMsg;
-  bool ledMsg;
 } msgData;
 
 // Broadcast to all devices
@@ -32,7 +30,6 @@ void sendEspNowMsg(char toMsg, char toNum, bool irValue, bool ledValue) {
   msgData.to[0] = toMsg;
   msgData.to[1] = toNum;
   msgData.irMsg = irValue;
-  msgData.ledMsg = ledValue;
 
   // Send message via ESP-NOW
   esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *)&msgData, sizeof(msgData));
@@ -55,7 +52,7 @@ int repeatMsgSendDelay(int delayTime) {
 
 // Wait for a plant to request water. Simple Timer for now
 int waitForSignal() {
-  static unsigned long startTime = millis();  // Timer Variables
+  static unsigned long startTime;  // Timer Variables
 
   // Enum for waitForSignal
   static enum {

@@ -6,7 +6,7 @@ const int robotUsMoveSpeed = 175;  // Speed to move when using ultrasound
 // IR close enough, switch to ultrasonic sensor now
 int moveToUsSource() {
   static int usCount = 0;  // Number of times unique ultrasound was detected when confirming
-  int usStrength = ultrasonicDistance();
+  int usStrength = getRobotUsDistance();
 
   if (!usStrength) {
     return 0;  // Something went wrong
@@ -26,8 +26,8 @@ int moveToUsSource() {
   return 0;
 }
 
-// Return Ultrasonic Time
-long ultrasonicDistance() {
+// Return Ultrasonic Time from Robot Ultrasonic Sensor
+long getRobotUsDistance() {
   // Clears the robotUsTrigPin
   digitalWrite(robotUsTrigPin, LOW);
   delayMicroseconds(2);
@@ -38,13 +38,32 @@ long ultrasonicDistance() {
 
   // Reads the robotUsEchoPin, returns sound travel time in microseconds
   long duration = pulseIn(robotUsEchoPin, HIGH);
-  delay(50);
+  millisDelay(50);
+  return duration;
+}
+
+// Return Ultrasonic Distance from Arm Ultrasonic Sensor
+long getArmUsDistance() {
+  // Clears the armUsTrigPin
+  digitalWrite(armUsTrigPin, LOW);
+  delayMicroseconds(2);
+  // Sets the armUsTrigPin on HIGH state for 10 micro seconds
+  digitalWrite(armUsTrigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(armUsTrigPin, LOW);
+
+  // Reads the armUsEchoPin, returns the sound wave travel time in microseconds
+  long duration = pulseIn(armUsEchoPin, HIGH);
+  millisDelay(50);
   return duration;
 }
 
 // -------- Sensor Setup Functions -------- //
-// Set Up Ultrasonic Sensor Pins
+// Set Up Ultrasonic Sensor Pins for robot and arm
 void ultrasonicSetup() {
   pinMode(robotUsTrigPin, OUTPUT);
   pinMode(robotUsEchoPin, INPUT);
+
+  pinMode(armUsTrigPin, OUTPUT);
+  pinMode(armUsEchoPin, INPUT);
 }

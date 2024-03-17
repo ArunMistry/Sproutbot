@@ -25,7 +25,6 @@ const int armUsEchoPin = 35;
 const int armServo1Pin = 25;
 const int armServo2Pin = 26;
 const int armServo3Pin = 27;
-const int armServo4Pin = 13;
 
 // Colour Sensor Pins
 const int colourInputPin = 36;
@@ -45,7 +44,7 @@ GPIO 3	 ||   BOOT: HIGH   ||
 GPIO 4	 ||------SAFE------||    Water Pump
 GPIO 5	 ||   BOOT: HIGH   ||
 GPIO 12	 ||   BOOT: LOW    ||    Colour LED    (May need to move)
-GPIO 13	 ||------SAFE------||    Arm Servo 4
+GPIO 13	 ||------SAFE------||    
 GPIO 14	 ||------SAFE------||    
 GPIO 15	 ||   BOOT: HIGH   ||
 GPIO 16	 ||------SAFE------||    US Trigger Robot

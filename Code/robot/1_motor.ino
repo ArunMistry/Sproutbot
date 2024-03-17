@@ -1,5 +1,5 @@
 // Setting PWM properties for motor
-const int freq = 30000;  // PWM Frequency
+const int freq = 3000;  // PWM Frequency
 const int motorPwmChannel = 0;
 const int resolution = 8;  // Resolution of Duty Cycle
 

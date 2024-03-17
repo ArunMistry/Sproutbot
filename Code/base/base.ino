@@ -6,12 +6,10 @@
 // from[2]: From { B0 = Base, R0 = Robot, P0 to P9 = Specific Plant }
 // to[2]  : To { B0 = Base, R0 = Robot, P0 to P9 = Specific Plant }
 // irMsg  : 0 = Turn off IR, 1 = Turn on IR
-// ledMsg : 0 = turn off Blue LEDs, 1 = turn on Blue LEDs
 struct msgStruct {
   char from[2];
   char to[2];
   bool irMsg;
-  bool ledMsg;
 } msgData;
 
 // Variables
@@ -24,10 +22,10 @@ void dataReceived(const uint8_t *mac, const uint8_t *incomingData, int len) {
   // Message is for base
   if (msgData.to[0] == 'B' && msgData.to[1] == '0') {
     digitalWrite(irPin, msgData.irMsg);
-    digitalWrite(2, msgData.irMsg);
-  } else if (msgData.to[0] == 'P') {
+    // digitalWrite(2, msgData.irMsg);
+  } else {
     digitalWrite(irPin, LOW);
-    digitalWrite(2, LOW);
+    // digitalWrite(2, LOW);
   }
 }
 

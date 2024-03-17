@@ -16,6 +16,7 @@ int findPlant(int plant) {
     Serial.println("TIMEOUT: Plant Not Found");
     return 0;
   } else if (irStatus == 1) {
+    sendEspNowMsg('P', plant + '0', 0, 0);
     Serial.println("findPlant Succeeded");
     return 1;
   }
@@ -35,6 +36,7 @@ int findBase() {
     Serial.println("TIMEOUT: BASE Not Found");
     return 0;
   } else if (irStatus == 1) {
+    sendEspNowMsg('B', '0', 0, 0);
     Serial.println("BASE Found");
     return 1;
   }

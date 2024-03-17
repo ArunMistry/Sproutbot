@@ -19,7 +19,7 @@ void wifiSetup() {
   // Connect to a WiFi network
   WiFi.begin(wifiName, password);
   for (int i = 0; (i < maxConnectAttempts && WiFi.status() != WL_CONNECTED); i++) {
-    delay(1000);
+    millisDelay(1000);
     Serial.println("Trying to connect");
   }
 
