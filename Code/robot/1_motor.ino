@@ -6,6 +6,7 @@ const int resolution = 8;  // Resolution of Duty Cycle
 // Motor Speed Control to smooth speed changes
 const float speedFrac = 0.05;     // How much speed must change by each update. Larger = Faster changes
 const int speedChangeDelay = 50;  // How long to wait before updating speed
+const int stoppingDelayDuration = 1000; // Duration of the stopping delay (in milliseconds)
 float speedSmoothed = 0;          // Previous speed value
 int turnDirection = 1;            // Check direction when wiggling
 int currentMovementState = 0;     // Tracks Current Movement State. Movement States: 0 = stopRobot; 1 = moveFront; 2 = moveBack; 3 = moveLeft; 4 = moveRight
@@ -13,15 +14,33 @@ int previousMovementState = 0;    // Tracks Previous Movement State.
 
 int speedControl(int speed) {
   static unsigned long startTime = millis();
+  static unsigned long stopTime = millis();
+  static bool stoppingDelay = false; // Flag to indicate whether stopping delay is active
+  static bool afterDelay = false; // Flag to indicate the end of the stopping delay
+  
   if (millis() - startTime > speedChangeDelay) {  // Has timeout happened yet?
     startTime = millis();                         // Reset startTime
     if (currentMovementState != previousMovementState){
-      speedSmoothed = 150;
+      stopTime = millis();
+      stopRobot();
+      stoppingDelay = true;
+      afterDelay = false; // Reset afterDelay flag
+      Serial.println("Speed set to Zero");
     }
     else{
-      speedSmoothed = (speed * speedFrac) + (speedSmoothed * (1 - speedFrac));
+      if (stoppingDelay && millis() - stopTime < stoppingDelayDuration) {
+        speedSmoothed = 0; // Set speed to 0 during the delay
+      } else {
+        stoppingDelay = false; // Deactivate stopping delay once the delay is over
+        if (!afterDelay) {
+          speedSmoothed = 200; // Reset speedSmoothed to 200 after the delay
+          afterDelay = true; // Set afterDelay flag to true after the delay
+        } else {
+          speedSmoothed = (speed * speedFrac) + (speedSmoothed * (1 - speedFrac));
+        }
+      }
     }
-    //Serial.println(speedSmoothed);
+    Serial.println(speedSmoothed);
     previousMovementState = currentMovementState;
     // if (speedSmoothed < speed) {
     //   speedSmoothed += 5;
@@ -32,7 +51,7 @@ int speedControl(int speed) {
 
 // Motor functions
 void stopRobot() {
-  currentMovementState = 0;
+  speedSmoothed = 0;
   ledcWrite(motorPwmChannel, 0);
   turnDirection = 1;
   digitalWrite(motorLPin1, LOW);
