@@ -102,7 +102,7 @@ void goToExtendPosition() {
 // It should detect an area within the pot
 int lookForAcceptableHeight() {
   // Check from starting position to 135 degrees
-  for (int angle = shoulderServo.angle; angle < 135; angle += 5) {
+  for (int angle = baseServo.angle; angle < 135; angle += 5) {
     moveServo(baseServo, angle);
     millisDelay(500);
     long avgDistance = getAvgDistance(20);
