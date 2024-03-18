@@ -1,6 +1,6 @@
 // Header Files
-#include <esp_now.h>
 #include <WiFi.h>
+#include <esp_now.h>
 
 // Message structure
 // from[2]: From { B0 = Base, R0 = Robot, P0 to P9 = Specific Plant }
@@ -15,11 +15,14 @@ struct msgStruct {
 // Variables
 const int irPin = 26;   // IR Emitter pin
 const int plantId = 0;  // Unique Plant ID
+unsigned long lastMsgTime;
+unsigned int maxMsgDelay = 30000;
 
 // Callback function executed when data is received
 void dataReceived(const uint8_t *mac, const uint8_t *incomingData, int len) {
   memcpy(&msgData, incomingData, sizeof(msgData));
   Serial.println("Message Received");
+  lastMsgTime = millis();
 
   // Message is for the specific plant
   if (msgData.to[0] == 'P' && msgData.to[1] == (plantId + '0')) {
@@ -50,4 +53,8 @@ void setup() {
 }
 
 void loop() {
+  if (millis() - lastMsgTime > maxMsgDelay) {
+    lastMsgTime = millis();
+    digitalWrite(irPin, LOW);
+  }
 }
