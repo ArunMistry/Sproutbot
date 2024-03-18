@@ -1,7 +1,7 @@
 // Ultrasonic Variables
 const int checkUsNum = 2;          // Minimum number of times to confirm Ultrasonic values
-const int destUsThreshold = 650;   // Time to first pulse detection. distance(cm) * 2 / 0.034
-const int robotUsMoveSpeed = 175;  // Speed to move when using ultrasound
+const int destUsThreshold = 800;   // Time to first pulse detection. distance(cm) * 2 / 0.034
+const int robotUsMoveSpeed = 185;  // Speed to move when using ultrasound
 
 // IR close enough, switch to ultrasonic sensor now
 int moveToUsSource() {
@@ -38,7 +38,7 @@ long getRobotUsDistance() {
 
   // Reads the robotUsEchoPin, returns sound travel time in microseconds
   long duration = pulseIn(robotUsEchoPin, HIGH);
-  millisDelay(50);
+  delay(20);
   return duration;
 }
 
@@ -54,7 +54,7 @@ long getArmUsDistance() {
 
   // Reads the armUsEchoPin, returns the sound wave travel time in microseconds
   long duration = pulseIn(armUsEchoPin, HIGH);
-  millisDelay(50);
+  delay(20);
   return duration;
 }
 

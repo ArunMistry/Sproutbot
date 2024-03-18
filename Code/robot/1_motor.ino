@@ -4,56 +4,65 @@ const int motorPwmChannel = 0;
 const int resolution = 8;  // Resolution of Duty Cycle
 
 // Motor Speed Control to smooth speed changes
-const float speedFrac = 0.05;     // How much speed must change by each update. Larger = Faster changes
+const float speedFrac =
+    0.1;  // How much speed must change by each update. Larger = Faster changes
 const int speedChangeDelay = 50;  // How long to wait before updating speed
-const int stoppingDelayDuration = 1000; // Duration of the stopping delay (in milliseconds)
-float speedSmoothed = 0;          // Previous speed value
-int turnDirection = 1;            // Check direction when wiggling
-int currentMovementState = 0;     // Tracks Current Movement State. Movement States: 0 = stopRobot; 1 = moveFront; 2 = moveBack; 3 = moveLeft; 4 = moveRight
-int previousMovementState = 0;    // Tracks Previous Movement State.
+const int stoppingDelayDuration =
+    500;                   // Duration of the stopping delay (in milliseconds)
+float speedSmoothed = 0;   // Previous speed value
+float initialSpeed = 170;  // Inital Speed of movement
+int turnDirection = 1;     // Check direction when wiggling
+int currentMovementState =
+    0;  // Tracks Current Movement State. Movement States: 0 = stopRobot; 1 =
+        // moveFront; 2 = moveBack; 3 = moveLeft; 4 = moveRight
+int previousMovementState = 0;  // Tracks Previous Movement State.
 
 int speedControl(int speed) {
   static unsigned long startTime = millis();
   static unsigned long stopTime = millis();
-  static bool stoppingDelay = false; // Flag to indicate whether stopping delay is active
-  static bool afterDelay = false; // Flag to indicate the end of the stopping delay
-  
+  static bool stoppingDelay =
+      false;  // Flag to indicate whether stopping delay is active
+  static bool afterDelay =
+      false;  // Flag to indicate the end of the stopping delay
+
   if (millis() - startTime > speedChangeDelay) {  // Has timeout happened yet?
     startTime = millis();                         // Reset startTime
-    if (currentMovementState != previousMovementState){
+    // If not already stopped, and switching between front/back/left/right, stop
+    // robot first
+    if ((currentMovementState != 0) &&
+        (currentMovementState != previousMovementState)) {
       stopTime = millis();
       stopRobot();
       stoppingDelay = true;
-      afterDelay = false; // Reset afterDelay flag
-      Serial.println("Speed set to Zero");
-    }
-    else{
+      afterDelay = false;  // Reset afterDelay flag
+      Serial.print("Speed set to Zero. Movement Mode: ");
+      Serial.println(currentMovementState);
+    } else {
       if (stoppingDelay && millis() - stopTime < stoppingDelayDuration) {
-        speedSmoothed = 0; // Set speed to 0 during the delay
+        speedSmoothed = 0;  // Set speed to 0 during the delay
       } else {
-        stoppingDelay = false; // Deactivate stopping delay once the delay is over
+        stoppingDelay =
+            false;  // Deactivate stopping delay once the delay is over
         if (!afterDelay) {
-          speedSmoothed = 200; // Reset speedSmoothed to 200 after the delay
-          afterDelay = true; // Set afterDelay flag to true after the delay
+          speedSmoothed =
+              initialSpeed;   // Reset speedSmoothed to 200 after the delay
+          afterDelay = true;  // Set afterDelay flag to true after the delay
         } else {
-          speedSmoothed = (speed * speedFrac) + (speedSmoothed * (1 - speedFrac));
+          speedSmoothed =
+              (speed * speedFrac) + (speedSmoothed * (1 - speedFrac));
         }
       }
     }
-    Serial.println(speedSmoothed);
+    // Serial.print("Speed: ");
+    // Serial.println(speedSmoothed);
     previousMovementState = currentMovementState;
-    // if (speedSmoothed < speed) {
-    //   speedSmoothed += 5;
-    // }
   }
   return (int)speedSmoothed;
 }
 
 // Motor functions
 void stopRobot() {
-  speedSmoothed = 0;
   ledcWrite(motorPwmChannel, 0);
-  turnDirection = 1;
   digitalWrite(motorLPin1, LOW);
   digitalWrite(motorLPin2, LOW);
   digitalWrite(motorRPin1, LOW);
@@ -63,37 +72,37 @@ void stopRobot() {
 void moveFront(int speed) {
   currentMovementState = 1;
   ledcWrite(motorPwmChannel, speedControl(speed));
-  digitalWrite(motorLPin1, LOW);
-  digitalWrite(motorLPin2, HIGH);
-  digitalWrite(motorRPin1, LOW);
-  digitalWrite(motorRPin2, HIGH);
+  digitalWrite(motorLPin1, HIGH);
+  digitalWrite(motorLPin2, LOW);
+  digitalWrite(motorRPin1, HIGH);
+  digitalWrite(motorRPin2, LOW);
 }
 
 void moveBack(int speed) {
   currentMovementState = 2;
   ledcWrite(motorPwmChannel, speedControl(speed));
-  digitalWrite(motorLPin1, HIGH);
-  digitalWrite(motorLPin2, LOW);
-  digitalWrite(motorRPin1, HIGH);
-  digitalWrite(motorRPin2, LOW);
+  digitalWrite(motorLPin1, LOW);
+  digitalWrite(motorLPin2, HIGH);
+  digitalWrite(motorRPin1, LOW);
+  digitalWrite(motorRPin2, HIGH);
 }
 
 void moveLeft(int speed) {
   currentMovementState = 3;
   ledcWrite(motorPwmChannel, speedControl(speed));
-  digitalWrite(motorLPin1, HIGH);
-  digitalWrite(motorLPin2, LOW);
-  digitalWrite(motorRPin1, LOW);
-  digitalWrite(motorRPin2, HIGH);
+  digitalWrite(motorLPin1, LOW);
+  digitalWrite(motorLPin2, HIGH);
+  digitalWrite(motorRPin1, HIGH);
+  digitalWrite(motorRPin2, LOW);
 }
 
 void moveRight(int speed) {
   currentMovementState = 4;
   ledcWrite(motorPwmChannel, speedControl(speed));
-  digitalWrite(motorLPin1, LOW);
-  digitalWrite(motorLPin2, HIGH);
-  digitalWrite(motorRPin1, HIGH);
-  digitalWrite(motorRPin2, LOW);
+  digitalWrite(motorLPin1, HIGH);
+  digitalWrite(motorLPin2, LOW);
+  digitalWrite(motorRPin1, LOW);
+  digitalWrite(motorRPin2, HIGH);
 }
 
 // Rotate in one direction, then another direction
@@ -106,13 +115,13 @@ void moveWiggle(int rotateSpeed, int rotateTime) {
     moveRight(rotateSpeed);
   }
   if ((millis() - totalTime) > (rotateTime * turnDirection)) {
-    Serial.println("Direction Changed when wiggling");
-    //speedSmoothed = 0;
+    Serial.print("Direction Changed when wiggling: ");
+    Serial.println(turnDirection);
+    // speedSmoothed = 0;
     totalTime = millis();
     turnDirection++;
   }
 }
-
 
 // -------- Motor Setup Functions -------- //
 void motorSetup() {

@@ -23,7 +23,7 @@ void onEspNowDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
 
 // Send a message to other boards.
 // toNum is 0 for Base and Robot
-void sendEspNowMsg(char toMsg, char toNum, bool irValue, bool ledValue) {
+void sendEspNowMsg(char toMsg, char toNum, bool irValue) {
   // Set values to send
   msgData.from[0] = 'R';
   msgData.from[1] = '0';
@@ -37,6 +37,8 @@ void sendEspNowMsg(char toMsg, char toNum, bool irValue, bool ledValue) {
   if (result != ESP_OK) {
     Serial.println("Error sending the data");
     esp_now_send(broadcastAddress, (uint8_t *)&msgData, sizeof(msgData));
+  } else {
+    // Success
   }
 }
 

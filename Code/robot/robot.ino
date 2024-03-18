@@ -1,10 +1,11 @@
 // Header Files
-#include <esp_now.h>
-#include <WiFi.h>
-#include <ESPAsyncWebServer.h>
-#include <AsyncTCP.h>
 #include <Arduino_JSON.h>
+#include <AsyncTCP.h>
 #include <ESP32Servo.h>
+#include <ESPAsyncWebServer.h>
+#include <WiFi.h>
+#include <esp_now.h>
+
 #include "pins.h"
 
 // Plant Variables
@@ -22,7 +23,6 @@ void setup() {
   Serial.begin(115200);  // Start Serial Comm & Logging
   ultrasonicSetup();     // Ultrasonic Sensor Setup
   motorSetup();          // Setup motor pins and PWM
-  armSetup();            // Arm Servo and Sensors Setup
   pumpSetup();           // Water Pump Setup
   wifiSetup();           // Setup wifi protocols
   espNowSetup();         // Setup ESP-NOW
@@ -33,13 +33,14 @@ void loop() {
   static enum {
     WAIT,
     FIND_PLANT,
-    MOVE_PLANT,
+    MOVE_PLANT,  // Skip
     MOVE_CLOSER_TO_PLANT,
     FIND_SOIL,
     FIND_BASE,
-    MOVE_BASE,
+    MOVE_BASE,  // Skip
     MOVE_CLOSER_TO_BASE
   } loopState = WAIT;
+  static bool armState = false;
 
   switch (loopState) {
     case WAIT:
@@ -57,18 +58,17 @@ void loop() {
         loopState = MOVE_CLOSER_TO_PLANT;
       }
       break;
-    case MOVE_PLANT:
-      {
-        int moveResult = moveToIrSource();
-        if (moveResult == 2) {
-          Serial.println("Plant Lost, searching again");
-          loopState = FIND_PLANT;
-        } else if (moveResult == 1) {
-          Serial.println("Plant Reached, using US now");
-          loopState = MOVE_CLOSER_TO_PLANT;
-        }
-        break;
+    case MOVE_PLANT: {
+      int moveResult = moveToIrSource();
+      if (moveResult == 2) {
+        Serial.println("Plant Lost, searching again");
+        loopState = FIND_PLANT;
+      } else if (moveResult == 1) {
+        Serial.println("Plant Reached, using US now");
+        loopState = MOVE_CLOSER_TO_PLANT;
       }
+      break;
+    }
     case MOVE_CLOSER_TO_PLANT:
       if (moveToUsSource()) {
         Serial.println("Ultrasonic Sensor used to get closer to plant");
@@ -76,21 +76,29 @@ void loop() {
         loopState = FIND_SOIL;
       }
       break;
-    case FIND_SOIL:
-      if (findSoil() == 1) {
-        Serial.println("Soil found and watered. Moving to next plant");
+    case FIND_SOIL: {
+      if (!armState) {
+        armState = true;
+        armSetup();  // Arm Servo and Sensors Setup
+      }
+      int findSoilValue = findSoil();
+      if (findSoilValue) {
+        armShutdown();
+        armState = false;
         goToPlant++;
         loopState = FIND_PLANT;
-      } else if (findSoil() == 2) {
-        Serial.print("No soil was detected, cancelling watering operation for plant ");
-        Serial.println(goToPlant);
-        goToPlant++;
-        loopState = FIND_PLANT;
+        if (findSoilValue == 1) {
+          Serial.println("Soil found and watered. Moving to next plant");
+        } else if (findSoilValue == 2) {
+          Serial.print("No soil detected, cancelling operation for plant ");
+          Serial.println(goToPlant);
+        }
       }
       break;
+    }
     case FIND_BASE:
       if (findBase()) {
-        loopState = MOVE_BASE;
+        loopState = MOVE_CLOSER_TO_BASE;
       }
       break;
     case MOVE_BASE:

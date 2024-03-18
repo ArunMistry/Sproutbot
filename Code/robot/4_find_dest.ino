@@ -1,13 +1,12 @@
 // Timing Variables
-int findPlantTimeout = 4000;
-int findBaseTimeout = 4000;
-int waterPlantTimeout = 20000;
-int msgSendDelay = 1000;
+int findPlantTimeout = 20000;
+int findBaseTimeout = 20000;
+int msgSendDelay = 2500;
 
 // Turn IR on at plant and find its location
 int findPlant(int plant) {
   if (repeatMsgSendDelay(msgSendDelay)) {  // Send message to turn on LED
-    sendEspNowMsg('P', plant + '0', 1, 0);
+    sendEspNowMsg('P', plant + '0', 1);
   }
 
   int irStatus = locateIrSource(findPlantTimeout);  // Find the IR Signal of plant
@@ -16,7 +15,7 @@ int findPlant(int plant) {
     Serial.println("TIMEOUT: Plant Not Found");
     return 0;
   } else if (irStatus == 1) {
-    sendEspNowMsg('P', plant + '0', 0, 0);
+    sendEspNowMsg('P', plant + '0', 0);
     Serial.println("findPlant Succeeded");
     return 1;
   }
@@ -27,7 +26,7 @@ int findPlant(int plant) {
 // TODO: Add in Communication
 int findBase() {
   if (repeatMsgSendDelay(msgSendDelay)) {  // Send message to turn on Base LED
-    sendEspNowMsg('B', '0', 1, 0);
+    sendEspNowMsg('B', '0', 1);
   }
 
   int irStatus = locateIrSource(findBaseTimeout);  // Find the IR Signal of base
@@ -36,7 +35,7 @@ int findBase() {
     Serial.println("TIMEOUT: BASE Not Found");
     return 0;
   } else if (irStatus == 1) {
-    sendEspNowMsg('B', '0', 0, 0);
+    sendEspNowMsg('B', '0', 0);
     Serial.println("BASE Found");
     return 1;
   }

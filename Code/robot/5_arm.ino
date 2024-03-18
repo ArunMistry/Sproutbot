@@ -15,10 +15,10 @@ const int initShoulderAngle = 180;
 const int initWristAngle = 30;
 
 // Required distances and thresholds
-const long targetArmUsDistanceToSoil = 300;
+const long targetArmUsDistanceToSoil = 800;
 const long minimumSafeWateringDistance = 150;
-const long maxSoilDistance = 1000;
-const int greenFrequencyThreshold = 4000;
+const long maxSoilDistance = 1200;
+const int greenFrequencyThreshold = 3400;
 
 // Main Function to move arm and find soil
 // Return 1 on successful find, 2 on failure
@@ -102,7 +102,7 @@ void goToExtendPosition() {
 // It should detect an area within the pot
 int lookForAcceptableHeight() {
   // Check starting position
-  long avgDistance = getAvgDistance(5);
+  long avgDistance = getAvgDistance(20);
   if (avgDistance < maxSoilDistance) {
     Serial.print("Found correct height: ");
     Serial.println(avgDistance);
@@ -110,10 +110,10 @@ int lookForAcceptableHeight() {
   }
 
   // Cycle through 180 degrees
-  for (int angle = 35; angle <= 135; angle += 10) {
+  for (int angle = 35; angle <= 135; angle += 20) {
     moveServo(baseServo, angle);
-    millisDelay(500);
-    long avgDistance = getAvgDistance(5);
+    millisDelay(1000);
+    long avgDistance = getAvgDistance(20);
     Serial.print("Current distance detected: ");
     Serial.println(avgDistance);
     if (avgDistance < maxSoilDistance) {
@@ -131,7 +131,11 @@ int getCloseToSoil() {
     moveServo(shoulderServo, angle);
     moveServo(wristServo, 90 + (60 - angle));
     millisDelay(500);
-    long avgDistance = getAvgDistance(5);
+    long avgDistance = getAvgDistance(20);
+    Serial.print("Distance: ");
+    Serial.print(avgDistance);
+    Serial.print("      Threshold: ");
+    Serial.println(targetArmUsDistanceToSoil);
     if (avgDistance <= targetArmUsDistanceToSoil) {
       return 1;
     }
@@ -203,7 +207,7 @@ int dispenseWater() {
 
   //Power on pump
   digitalWrite(waterPumpPin, HIGH);
-  millisDelay(5000);
+  millisDelay(7000);
   digitalWrite(waterPumpPin, LOW);
   return 1;
 }
@@ -248,6 +252,7 @@ void moveServo(struct servoMotorStruct &servoToMove, int desiredAngle) {
 }
 
 void printSensorData() {
+  digitalWrite(colourLEDPin, HIGH);
   long value = getArmUsDistance();
   Serial.print("Ultrasonic reading: ");
   Serial.println(value);
@@ -284,6 +289,12 @@ void armSetup() {
 
   // Initialize Arm Position
   initializeArmPosition();
+}
+
+void armShutdown() {
+  baseServo.servo.detach();
+  shoulderServo.servo.detach();
+  wristServo.servo.detach();
 }
 
 // Initialize Pump pins

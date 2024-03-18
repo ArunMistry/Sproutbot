@@ -4,7 +4,7 @@
 const char* wifiName = "JAMROC 9021";
 const char* password = "Jamroc12";
 
-const int maxConnectAttempts = 10;
+const int maxConnectAttempts = 1;
 bool wifiSuccess = false;
 
 AsyncWebServer server(80);
@@ -20,7 +20,7 @@ void wifiSetup() {
   WiFi.begin(wifiName, password);
   for (int i = 0; (i < maxConnectAttempts && WiFi.status() != WL_CONNECTED); i++) {
     millisDelay(1000);
-    Serial.println("Trying to connect");
+    Serial.println("Trying to connect to WiFi");
   }
 
   if (WiFi.status() != WL_CONNECTED) {
