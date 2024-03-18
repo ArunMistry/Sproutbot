@@ -93,7 +93,7 @@ int findSoil() {
 
 // Extend arm outwards, towards soil
 void goToExtendPosition() {
-  //moveServoSlowly(shoulderServo, 45);
+  // moveServoSlowly(shoulderServo, 45);
   moveServo(shoulderServo, 45);
   moveServo(wristServo, 90 + (60 - 45));
 }
@@ -101,18 +101,34 @@ void goToExtendPosition() {
 // Rotate arm left and right until it no longer detects the ground
 // It should detect an area within the pot
 int lookForAcceptableHeight() {
-  // Check starting position
-  long avgDistance = getAvgDistance(20);
-  if (avgDistance < maxSoilDistance) {
-    Serial.print("Found correct height: ");
+  // Check from starting position to 135 degrees
+  for (int angle = shoulderServo.angle; angle < 135; angle += 5) {
+    moveServo(baseServo, angle);
+    millisDelay(500);
+    long avgDistance = getAvgDistance(20);
+    Serial.print("Current distance detected: ");
     Serial.println(avgDistance);
-    return 1;
+    if (avgDistance < maxSoilDistance) {
+      return 1;
+    }
   }
 
-  // Cycle through 180 degrees
-  for (int angle = 35; angle <= 135; angle += 20) {
+  // Cycle from 135 degrees to 45 degrees
+  for (int angle = 135; angle >= 45; angle -= 5) {
     moveServo(baseServo, angle);
-    millisDelay(1000);
+    millisDelay(500);
+    long avgDistance = getAvgDistance(20);
+    Serial.print("Current distance detected: ");
+    Serial.println(avgDistance);
+    if (avgDistance < maxSoilDistance) {
+      return 1;
+    }
+  }
+
+  // Final cycle from 45 degrees to 90 degrees
+  for (int angle = 45; angle <= 90; angle += 5) {
+    moveServo(baseServo, angle);
+    millisDelay(500);
     long avgDistance = getAvgDistance(20);
     Serial.print("Current distance detected: ");
     Serial.println(avgDistance);
@@ -124,11 +140,13 @@ int lookForAcceptableHeight() {
 }
 
 // Move arm down until it gets close to soil
-// Only checks distance
+// Only checks distance, mostly moves shoulder servo
+// Slightly rotates wrist
 int getCloseToSoil() {
   // Attempt to get close to dirt
-  for (int angle = shoulderServo.angle; angle >= 0; angle -= 5) {
+  for (int angle = shoulderServo.angle; angle >= 15; angle -= 5) {
     moveServo(shoulderServo, angle);
+    millisDelay(500);
     moveServo(wristServo, 90 + (60 - angle));
     millisDelay(500);
     long avgDistance = getAvgDistance(20);
@@ -138,28 +156,30 @@ int getCloseToSoil() {
     Serial.println(targetArmUsDistanceToSoil);
     if (avgDistance <= targetArmUsDistanceToSoil) {
       return 1;
+    } else if (avgDistance > 10000) {
+      angle += 3;
     }
   }
   return 0;
 }
 
 // Move sensors until soil is detected
+// Moves base servo left and right by a small amount
 int lookForSoil() {
   digitalWrite(colourLEDPin, HIGH);
   millisDelay(500);
 
-  int initialAngle = baseServo.angle;
-
-  //Check incrementing side
-  for (int angle = initialAngle; angle <= 180; angle += 5) {
-    moveServo(baseServo, angle);
-    millisDelay(100);
-    int distance = getAvgDistance(5);
+  // Check incrementing side
+  for (int i = 0; i <= 5; i++) {
+    moveServo(baseServo, baseServo.angle + 3);
+    millisDelay(200);
+    int distance = getAvgDistance(15);
     if (distance > maxSoilDistance) {
       Serial.print("Too far for color detection: ");
       Serial.println(distance);
       continue;
     }
+
     int frequencyOfGreen = pulseIn(colourInputPin, LOW);
     Serial.print("Color sensor detected: ");
     Serial.println(frequencyOfGreen);
@@ -169,10 +189,17 @@ int lookForSoil() {
     }
   }
 
-  //Check decrementing side
-  for (int angle = initialAngle; angle >= 0; angle -= 5) {
-    moveServo(baseServo, angle);
-    millisDelay(100);
+  // Check decrementing side
+  for (int i = 0; i <= 11; i++) {
+    moveServo(baseServo, baseServo.angle - 3);
+    millisDelay(200);
+    int distance = getAvgDistance(15);
+    if (distance > maxSoilDistance) {
+      Serial.print("Too far for color detection: ");
+      Serial.println(distance);
+      continue;
+    }
+
     int frequencyOfGreen = pulseIn(colourInputPin, LOW);
     Serial.print("Color sensor detected: ");
     Serial.println(frequencyOfGreen);
@@ -188,24 +215,26 @@ int lookForSoil() {
 
 // Run some safety checks before turning on pump
 int dispenseWater() {
-  //Last minute safety checks
+  // Last minute safety checks
   Serial.println("Arm: Checking watering safety requirements");
 
   long distance = getAvgDistance(5);
-  if ((distance < minimumSafeWateringDistance) || (distance > maxSoilDistance) || (shoulderServo.angle > 90) || (wristServo.angle < 90)) {
+  if ((distance < minimumSafeWateringDistance) ||
+      (distance > maxSoilDistance) || (shoulderServo.angle > 90) ||
+      (wristServo.angle < 90)) {
     Serial.print("Distance: ");
     Serial.println(distance);
 
     Serial.print("Shoulder Angle: ");
     Serial.println(shoulderServo.angle);
 
-    Serial.print("wirstServo: ");
+    Serial.print("Wrist Servo Angle: ");
     Serial.println(wristServo.angle);
 
     return 0;
   }
 
-  //Power on pump
+  // Power on pump
   digitalWrite(waterPumpPin, HIGH);
   millisDelay(7000);
   digitalWrite(waterPumpPin, LOW);
@@ -225,15 +254,11 @@ void resetArmPosition() {
 
 // ---------- Helper Functions ---------- //
 void moveServo(struct servoMotorStruct &servoToMove, int desiredAngle) {
-  //Serial.println("Arm: Moving Servo!");
+  // Serial.println("Arm: Moving Servo!");
   int startingAngle = servoToMove.angle;
-  // Serial.println("Arm: Read");
   int diff = abs(desiredAngle - startingAngle);
-  // Serial.println(d
   bool isAngleIncreasing = desiredAngle > startingAngle;
-  // Serial.println("Arm: Bool");
   int currentAngle = startingAngle;
-  //Serial.println("Arm: Loop");
   for (int i = 0; i <= diff; i++) {
     // Serial.print(currentAngle);
     // Serial.print("::::");
@@ -248,7 +273,7 @@ void moveServo(struct servoMotorStruct &servoToMove, int desiredAngle) {
     millisDelay(15);
   }
   servoToMove.angle = desiredAngle;
-  //Serial.println("Arm: Done moving servo!");
+  // Serial.println("Arm: Done moving servo!");
 }
 
 void printSensorData() {
@@ -295,11 +320,12 @@ void armShutdown() {
   baseServo.servo.detach();
   shoulderServo.servo.detach();
   wristServo.servo.detach();
+  digitalWrite(colourLEDPin, LOW);
 }
 
 // Initialize Pump pins
 void pumpSetup() {
-  //Init pump
+  // Init pump
   pinMode(waterPumpPin, OUTPUT);
   digitalWrite(waterPumpPin, LOW);
 }
