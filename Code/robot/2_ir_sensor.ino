@@ -1,11 +1,11 @@
 // IR Variables for Wiggle
-const int findIrRotateSpeed = 200;       // Speed to rotate when searching for plant
+const int findIrRotateSpeed = 220;       // Speed to rotate when searching for plant
 const int timeForOneDirectionIr = 2500;  // Time to rotate when searching IR, increased gradually
 // IR Variables to confirm signal
 const int checkIrNum = 50;            // Minimum number of times to confirm analog IR value
 const uint16_t minIrStrength = 2000;  // Analog IR Value when not detected
 // IR Variables to move to destination
-const int robotIrMoveSpeed = 210;  // Speed to move when using IR
+const int robotIrMoveSpeed = 180;  // Speed to move when using IR
 const int destIrThreshold = 4090;  // IR strength when close to destination
 
 // Keep turning until the middle sensor reports a value.
