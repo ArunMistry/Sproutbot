@@ -2,11 +2,11 @@
 const int findIrRotateSpeed = 220;       // Speed to rotate when searching for plant
 const int timeForOneDirectionIr = 2500;  // Time to rotate when searching IR, increased gradually
 // IR Variables to confirm signal
-const int checkIrNum = 50;            // Minimum number of times to confirm analog IR value
-const uint16_t minIrStrength = 2000;  // Analog IR Value when not detected
+const int checkIrNum = 50;           // Minimum number of times to confirm analog IR value
+const uint16_t minIrStrength = 500;  // Analog IR Value when not detected
 // IR Variables to move to destination
 const int robotIrMoveSpeed = 180;  // Speed to move when using IR
-const int destIrThreshold = 4090;  // IR strength when close to destination
+const int destIrThreshold = 100;   // IR strength when close to destination
 
 // Keep turning until the middle sensor reports a value.
 // Returns 0 if IR not found, 1 if IR found, 2 if function times out.
@@ -36,8 +36,7 @@ int locateIrSource(int timeout) {
         Serial.println("Timeout for finding IR");
       } else {
         moveWiggle(findIrRotateSpeed, timeForOneDirectionIr);  // Move robot to find signal
-
-        static unsigned long analogReadTime = millis();  // Stop Overwhelming ESP32
+        static unsigned long analogReadTime = millis();        // Stop Overwhelming ESP32
         if (millis() - analogReadTime > 5) {
           analogReadTime = millis();
           uint16_t analogIrValue = analogRead(irOpAmpPin);
@@ -54,6 +53,7 @@ int locateIrSource(int timeout) {
         static int irCount = 0;                                // Number of times unique IR was detected when confirming
         if (irOpAmpPinStrength > minIrStrength) {
           irCount++;
+          millisDelay(20);
           if (irCount >= checkIrNum) {  // Enough unique IR samples detected?
             irCount = 0;                // Reset irCount
             enumlocateIrSource = IR_SUCCESS;
@@ -91,22 +91,54 @@ int locateIrSource(int timeout) {
 // Move towards IR source. Switch to ultrasound when close enough to plant.
 // Returns 0 if not yet reached, 1 if reached, 2 if lost.
 int moveToIrSource() {
-  static int irCount = 0;  // Number of times unique ultrasound was detected when confirming
-  int irOpAmpPinStrength = analogRead(irOpAmpPin);
+  static int irCount = 0;                  // Number of times unique ultrasound was detected when confirming
+  static unsigned long usTime = millis();  // Ultrasonic Timer
+  static long usValue;
+  static bool crashSwitch;
+  int irAnalogPinStrength = analogRead(irAnalogPin);
+  Serial.print("Analog IR Value: ");
+  Serial.println(irAnalogPinStrength);
 
-  if (irOpAmpPinStrength >= destIrThreshold) {
+  if (millis() - usTime > 200) {
+    usValue = (int)getRobotUsDistance();
+    usTime = millis();
+    crashSwitch = digitalRead(leftCrashSwitch) || digitalRead(rightCrashSwitch);
+    if (crashSwitch) {
+      Serial.print("Crash: ");
+      Serial.println(crashSwitch);
+    }
+  }
+
+  if (crashSwitch || (usValue < 1000 && irAnalogPinStrength > destIrThreshold)) {
     stopRobot();
-    irCount++;                    // Increment number of times of detection
+    millisDelay(500);
+    unsigned long backTime = millis();
+    if (millis() - backTime < 1000) {
+      moveBack(robotIrMoveSpeed);
+    }
+    stopRobot();
+    return 2;
+  }
+
+  if (irAnalogPinStrength <= destIrThreshold) {
+    stopRobot();
+    irCount++;  // Increment number of times of detection
+    millisDelay(50);
     if (irCount >= checkIrNum) {  // Enough Ultrasound samples detected?
       Serial.println("IR Sensor Close enough, moveToIrSource complete");
       irCount = 0;  // Reset usCount
       return 1;     // Return success
     }
-  } else if (irOpAmpPinStrength <= minIrStrength) {  // IR Signal has been lost
-    return 2;
   } else {
-    irCount = 0;                  // Reset irCount if signal is found, for future function calls
-    moveFront(robotIrMoveSpeed);  // Move towards IR Source
+    irCount = 0;  // Reset irCount if signal is found, for future function calls
+    int irOpAmpPinStrength = analogRead(irOpAmpPin);
+    Serial.print("Op-Amp IR Value: ");
+    Serial.println(irOpAmpPinStrength);
+    if (irOpAmpPinStrength <= minIrStrength) {  // IR Signal has been lost
+      return 2;
+    } else {
+      moveFront(robotIrMoveSpeed);  // Move towards IR Source
+    }
   }
   return 0;
 }

@@ -7,6 +7,8 @@ int msgSendDelay = 2500;
 int findPlant(int plant) {
   if (repeatMsgSendDelay(msgSendDelay)) {  // Send message to turn on LED
     sendEspNowMsg('P', plant + '0', 1);
+    Serial.print("Plant: ");
+    Serial.println(plant);
   }
 
   int irStatus = locateIrSource(findPlantTimeout);  // Find the IR Signal of plant
@@ -40,4 +42,10 @@ int findBase() {
     return 1;
   }
   return 0;
+}
+
+// Arm Setup
+void armCommSetup() {
+  pinMode(armInput, INPUT);
+  pinMode(armOutput, OUTPUT);
 }
