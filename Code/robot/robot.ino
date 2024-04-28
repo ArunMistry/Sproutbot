@@ -33,10 +33,12 @@ void loop() {
   static enum {
     WAIT,
     FIND_PLANT,
-    MOVE_PLANT,
+    MOVE_PLANT_IR,
+    MOVE_PLANT_US,
     WATER_ARM,
     FIND_BASE,
-    MOVE_BASE,
+    MOVE_BASE_IR,
+    MOVE_BASE_US
   } loopState = WAIT;
 
   switch (loopState) {
@@ -50,15 +52,29 @@ void loop() {
         goToPlant = 0;
         loopState = FIND_BASE;
       }
+      // debugSensors();
       if (findPlant(goToPlant)) {
-        loopState = MOVE_PLANT;
+        loopState = MOVE_PLANT_IR;
       }
       break;
-    case MOVE_PLANT:
+    case MOVE_PLANT_IR:
       {
         int moveResult = moveToIrSource();
         if (moveResult == 2) {
           Serial.println("Plant Lost, searching again");
+          loopState = FIND_PLANT;
+        } else if (moveResult == 1) {
+          Serial.println("IR Close, search with US");
+          loopState = MOVE_PLANT_US;
+        }
+        // debugSensors();
+        break;
+      }
+    case MOVE_PLANT_US:
+      {
+        int moveResult = moveToUsSource();
+        if (moveResult == 2) {
+          Serial.println("US Timeout, search for IR again");
           loopState = FIND_PLANT;
         } else if (moveResult == 1) {
           Serial.println("Plant Reached, Water Plant now");
@@ -78,10 +94,10 @@ void loop() {
       }
     case FIND_BASE:
       if (findBase()) {
-        loopState = MOVE_BASE;
+        loopState = MOVE_BASE_IR;
       }
       break;
-    case MOVE_BASE:
+    case MOVE_BASE_IR:
       {
         int moveResult = moveToIrSource();
         if (moveResult == 2) {
@@ -89,11 +105,22 @@ void loop() {
           loopState = FIND_BASE;
         } else if (moveResult == 1) {
           Serial.println("Base Reached, wait now");
+          loopState = MOVE_BASE_US;
+        }
+        break;
+      }
+    case MOVE_BASE_US:
+      {
+        int moveResult = moveToUsSource();
+        if (moveResult == 2) {
+          Serial.println("US Timeout, search for IR again");
+          loopState = FIND_BASE;
+        } else if (moveResult == 1) {
+          Serial.println("Base Reached, Wait now");
           loopState = WAIT;
         }
         break;
       }
-      break;
     default:
       // Should not get here
       break;

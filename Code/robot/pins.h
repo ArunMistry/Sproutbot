@@ -11,8 +11,8 @@ const int enablePin = 23;  // Enable
 // Motor control pins
 const int motorLPin1 = 32;  // Left Motor
 const int motorLPin2 = 33;
-const int motorRPin1 = 18;  // Right Motor
-const int motorRPin2 = 19;
+const int motorRPin1 = 19;  // Right Motor
+const int motorRPin2 = 18;
 
 // Robot Ultrasonic Pins
 const int robotUsTrigPin = 22;
@@ -23,8 +23,8 @@ const int armInput = 35;   // Receive from plant
 const int armOutput = 27;  // Send to plant
 
 // Front Switch sensors
-const int leftCrashSwitch = 25;
-const int rightCrashSwitch = 26;
+const int leftCrashSwitch = 16;
+const int rightCrashSwitch = 17;
 
 
 #endif  // PINS_H
@@ -41,15 +41,15 @@ GPIO 12	 ||   BOOT: LOW    ||
 GPIO 13	 ||------SAFE------||    
 GPIO 14	 ||------SAFE------||    
 GPIO 15	 ||   BOOT: HIGH   ||
-GPIO 16	 ||------SAFE------||    
-GPIO 17	 ||------SAFE------||    
+GPIO 16	 ||------SAFE------||    CrashLeft Switch
+GPIO 17	 ||------SAFE------||    CrashRight Switch
 GPIO 18	 ||------SAFE------||    MotorR Pin 1
 GPIO 19	 ||------SAFE------||    MotorR Pin 2
 GPIO 21	 ||------SAFE------||    
 GPIO 22	 ||------SAFE------||    US Trigger Robot
 GPIO 23	 ||------SAFE------||    Motor Enable 
-GPIO 25	 ||------SAFE------||    CrashLeft Switch
-GPIO 26	 ||------SAFE------||    CrashRight Switch
+GPIO 25	 ||------SAFE------||    
+GPIO 26	 ||------SAFE------||    
 GPIO 27	 ||------SAFE------||    Arm Output Pin
 GPIO 32	 ||------SAFE------||    MotorL Pin1
 GPIO 33	 ||------SAFE------||    MotorL Pin2

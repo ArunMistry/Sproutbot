@@ -25,7 +25,7 @@ void dataReceived(const uint8_t *mac, const uint8_t *incomingData, int len) {
   lastMsgTime = millis();
 
   // Message is for the specific plant
-  if (msgData.to[0] == 'P' && msgData.to[1] == (plantId + '0')) {
+  if (msgData.from[0] == 'R' && msgData.from[1] == '0') {
     Serial.println(msgData.irMsg);
     digitalWrite(irPin, msgData.irMsg);
     // digitalWrite(2, msgData.irMsg);

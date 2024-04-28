@@ -1,12 +1,19 @@
 // IR Variables for Wiggle
 const int findIrRotateSpeed = 220;       // Speed to rotate when searching for plant
 const int timeForOneDirectionIr = 2500;  // Time to rotate when searching IR, increased gradually
+
 // IR Variables to confirm signal
-const int checkIrNum = 50;           // Minimum number of times to confirm analog IR value
-const uint16_t minIrStrength = 500;  // Analog IR Value when not detected
+const int checkIrNum = 50;                // Minimum number of times to confirm analog IR value
+const uint16_t minOpAmpIrStrength = 100;  // OpAmp IR Value when not detected
+
 // IR Variables to move to destination
-const int robotIrMoveSpeed = 180;  // Speed to move when using IR
-const int destIrThreshold = 100;   // IR strength when close to destination
+const int robotIrMoveSpeed = 180;       // Speed to move when using IR
+const int destAnalogIrThreshold = 300;  // IR strength when close to destination
+
+const int usCheckDelay = 50;         // Delay between multiple US sensor reads
+const int usCollisionDist = 3000;    // Distance for US to report a collision
+const int backTimeCollision = 1500;  // Time to move back for
+
 
 // Keep turning until the middle sensor reports a value.
 // Returns 0 if IR not found, 1 if IR found, 2 if function times out.
@@ -40,7 +47,7 @@ int locateIrSource(int timeout) {
         if (millis() - analogReadTime > 5) {
           analogReadTime = millis();
           uint16_t analogIrValue = analogRead(irOpAmpPin);
-          if (analogIrValue > minIrStrength) {
+          if (analogIrValue > minOpAmpIrStrength) {
             stopRobot();  // Stop robot if signal is found
             enumlocateIrSource = IR_DETECT;
           }
@@ -51,7 +58,7 @@ int locateIrSource(int timeout) {
       {
         uint16_t irOpAmpPinStrength = analogRead(irOpAmpPin);  // Get strength of IR Sensor
         static int irCount = 0;                                // Number of times unique IR was detected when confirming
-        if (irOpAmpPinStrength > minIrStrength) {
+        if (irOpAmpPinStrength > minOpAmpIrStrength) {
           irCount++;
           millisDelay(20);
           if (irCount >= checkIrNum) {  // Enough unique IR samples detected?
@@ -99,28 +106,33 @@ int moveToIrSource() {
   Serial.print("Analog IR Value: ");
   Serial.println(irAnalogPinStrength);
 
-  if (millis() - usTime > 200) {
+  // Ultrasonic and Switch Reads
+  if (millis() - usTime > usCheckDelay) {
     usValue = (int)getRobotUsDistance();
     usTime = millis();
     crashSwitch = digitalRead(leftCrashSwitch) || digitalRead(rightCrashSwitch);
     if (crashSwitch) {
-      Serial.print("Crash: ");
-      Serial.println(crashSwitch);
+      Serial.print("Crash!");
     }
   }
 
-  if (crashSwitch || (usValue < 1000 && irAnalogPinStrength > destIrThreshold)) {
+  // Collision Detected
+  if (crashSwitch || (usValue < usCollisionDist && irAnalogPinStrength > destAnalogIrThreshold)) {
     stopRobot();
     millisDelay(500);
+
+    // Move back for 1 second
     unsigned long backTime = millis();
-    if (millis() - backTime < 1000) {
+    if (millis() - backTime < backTimeCollision) {
       moveBack(robotIrMoveSpeed);
     }
+
     stopRobot();
     return 2;
   }
 
-  if (irAnalogPinStrength <= destIrThreshold) {
+  // IR Checks
+  if (irAnalogPinStrength <= destAnalogIrThreshold) {
     stopRobot();
     irCount++;  // Increment number of times of detection
     millisDelay(50);
@@ -134,7 +146,7 @@ int moveToIrSource() {
     int irOpAmpPinStrength = analogRead(irOpAmpPin);
     Serial.print("Op-Amp IR Value: ");
     Serial.println(irOpAmpPinStrength);
-    if (irOpAmpPinStrength <= minIrStrength) {  // IR Signal has been lost
+    if (irOpAmpPinStrength <= minOpAmpIrStrength) {  // IR Signal has been lost
       return 2;
     } else {
       moveFront(robotIrMoveSpeed);  // Move towards IR Source
@@ -142,3 +154,34 @@ int moveToIrSource() {
   }
   return 0;
 }
+
+
+int debugSensors() {
+  if (repeatMsgSendDelay(2000)) {  // Send message to turn on LED
+    sendEspNowMsg('P', 0 + '0', 1);
+  }
+
+  static unsigned long loopTime = millis();
+  if (millis() - loopTime > 200) {
+    loopTime = millis();
+    long usValue = (int)getRobotUsDistance();
+    int irAnalogPinStrength = analogRead(irAnalogPin);
+    int irOpAmpPinStrength = analogRead(irOpAmpPin);
+    Serial.print("Analog IR Value: ");
+    Serial.println(irAnalogPinStrength);
+    Serial.print("Op-Amp IR Value: ");
+    Serial.println(irOpAmpPinStrength);
+    Serial.print("Ultrasonic: ");
+    Serial.println(usValue);
+
+    bool crashSwitch = digitalRead(leftCrashSwitch) || digitalRead(rightCrashSwitch);
+    if (crashSwitch) {
+      Serial.print("Crash!");
+    }
+  }
+  delay(100);
+
+  return 0;
+}
+
+
